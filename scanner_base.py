@@ -21,7 +21,7 @@ class ScannerBase(object):
         if stepper_steps_per_rev is None:
             stepper_steps_per_rev = 400
         if stepper_motor_port is None:
-            stepper_motor_port = 1
+            stepper_motor_port = 2
 
         # create a default object, no changes to I2C address or frequency
         self.motor_hat = Adafruit_MotorHAT()
@@ -54,7 +54,7 @@ class ScannerBase(object):
 
     def get_steps_per_deg(self):
         """Returns the number of steps per degree"""
-        return self.get_num_steps_per_rev() / 360.0
+        return 1.0 * self.get_num_steps_per_rev() / 360.0
 
     def turn_off_motors(self):
         """Turns off stepper motor, recommended for auto-disabling motors on shutdown!"""
@@ -68,6 +68,8 @@ def main():
     """Creates a base and moves it 90 degrees"""
     print "Creating base..."
     base = ScannerBase()
+
+    print base.get_steps_per_deg()
 
     print "Moving base 90 degrees..."
     for _ in itertools.repeat(None, 90):

@@ -6,6 +6,7 @@ import scanner_base
 import scan_exporter
 import scan_utils
 import time
+import math
 
 
 class Scanner(object):
@@ -70,19 +71,31 @@ class Scanner(object):
         angle_between_sweeps = 1.0 * num_stepper_steps_per_move / \
             self.base.get_steps_per_deg()
 
+        # correct the num_sweeps to account for the accumulated difference due
+        # to rounding
+        num_sweeps = math.floor(
+            1.0 * self.settings.get_scan_range() / angle_between_sweeps)
+
         # Start Scanning
         self.device.start_scanning()
 
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(self.device.get_scans()):
+            # remove readings from unreliable distances
+            scan_utils.remove_distance_extremes(
+                scan, self.settings.get_min_range_val(), self.settings.get_max_range_val())
+
             # Remove readings from the deadzone
             scan_utils.remove_angular_window(
                 scan, self.settings.get_deadzone(), 360 - self.settings.get_deadzone())
 
+            if len(scan.samples) > self.settings.get_max_samples_per_scan():
+                continue
+
             # Export the scan
-            self.exporter.export_2D_scan(
-                scan, scan_count, angle_between_sweeps * scan_count)
+            self.exporter.export_2D_scan(scan, scan_count, self.settings.get_mount_angle(
+            ), angle_between_sweeps * scan_count)
 
             # Wait for the device to reach the threshold angle for movement
             time.sleep(self.settings.get_time_to_deadzone_sec())
@@ -129,14 +142,13 @@ class Scanner(object):
 def main():
     """Creates a 3D scanner and gather 90 degrees worth of scan"""
     with Sweep() as sweep:
-        print "Creating base..."
         # Create a scan settings obj
         settings = scan_settings.ScanSettings(
             sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
             sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
             120,                                    # starting angle of deadzone
             180,                                    # angular range of scan
-            90)                                     # mount angle of device relative to horizontal
+            -90)                                    # mount angle of device relative to horizontal
         # Create a default base obj
         base = scanner_base.ScannerBase()
         # Create a scanner object
@@ -144,6 +156,7 @@ def main():
 
         # Setup the scanner
         scanner.setup()
+
         # Perform the scan
         scanner.perform_scan()
 

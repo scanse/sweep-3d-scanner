@@ -28,16 +28,18 @@ class ScanSettings(object):
         if sample_rate is None:
             sample_rate = sweep_constants.SAMPLE_RATE_500_HZ
         if deadzone is None:
-            deadzone = 145
+            deadzone = 120
         if scan_range is None:
             scan_range = 180
         if mount_angle is None:
-            mount_angle = 90
+            mount_angle = -90
         self.motor_speed = motor_speed
         self.sample_rate = sample_rate
         self.deadzone = deadzone
         self.scan_range = scan_range
         self.mount_angle = mount_angle
+        self.min_range_val = 10
+        self.max_range_val = 4000
 
     def set_motor_speed(self, motor_speed=None):
         """Sets the motor speed setting
@@ -87,6 +89,18 @@ class ScanSettings(object):
     def get_sample_rate(self):
         """Returns the sample rate setting in HZ"""
         return self.sample_rate
+
+    def get_min_range_val(self):
+        """Returns the minimum range value for a sensor reading to be recorded"""
+        return self.min_range_val
+
+    def get_max_range_val(self):
+        """Returns the maximum range value for a sensor reading to be recorded"""
+        return self.max_range_val
+
+    def get_max_samples_per_scan(self):
+        """Returns the maximum number of expected samples in a scan"""
+        return int(round(self.sample_rate * self.get_deadzone() / 180.0 + 0.35 * self.sample_rate))
 
     def get_deadzone(self):
         """Returns the threshold angle setting"""
@@ -138,13 +152,15 @@ def main():
     custom_params = ScanSettings(
         sweep_constants.MOTOR_SPEED_2_HZ,       # desired motor speed setting
         sweep_constants.SAMPLE_RATE_750_HZ,     # desired sample rate setting
-        145,                                    # desired deadzone angle threshold
+        120,                                    # desired deadzone angle threshold
         180,                                    # desired range of movement
-        90)                                     # mount angle of device relative to horizontal plane
+        -90)                                    # mount angle of device relative to horizontal plane
 
     # Prints details for both objects
     default_params.print_details()
     custom_params.print_details()
+
+    print default_params.get_max_samples_per_scan()
 
 if __name__ == '__main__':
     main()

@@ -80,11 +80,12 @@ def main():
     exporter = ScanExporter()
     print exporter.get_relative_file_path()
 
-    dummy_samples = [sweeppy.Sample(angle=3 * n, distance=1000 + n, signal_strength=199)
-                     for n in range(10)]
-    dummy_scan = sweeppy.Scan(samples=dummy_samples)
+    for base_angle in range(0, 11):
+        dummy_samples = [sweeppy.Sample(angle=30 * n, distance=1000, signal_strength=199)
+                         for n in range(11)]
+        dummy_scan = sweeppy.Scan(samples=dummy_samples)
 
-    exporter.export_2D_scan(dummy_scan, 0, 90, 0)
+        exporter.export_2D_scan(dummy_scan, 0, 90, base_angle * 30)
 
 if __name__ == '__main__':
     main()
