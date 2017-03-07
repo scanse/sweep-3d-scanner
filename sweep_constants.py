@@ -1,5 +1,5 @@
 """Defines constants for the sweep device"""
-
+MOTOR_SPEED_0_HZ = 0
 MOTOR_SPEED_1_HZ = 1
 MOTOR_SPEED_2_HZ = 2
 MOTOR_SPEED_3_HZ = 3

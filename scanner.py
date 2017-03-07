@@ -41,6 +41,10 @@ class Scanner(object):
 
     def setup(self):
         """Setups up the device according to the scan settings"""
+        self.device.reset()
+        # sleep for 5 seconds, allowing time for device to reset
+        time.sleep(5)
+
         # Set the motor speed and sample rate
         self.device.set_motor_speed(self.settings.get_motor_speed())
         self.device.set_sample_rate(self.settings.get_sample_rate())
@@ -48,8 +52,12 @@ class Scanner(object):
         print 'Motor Speed: {} Hz'.format(self.device.get_motor_speed())
         print 'Sample Rate: {} Hz'.format(self.device.get_sample_rate())
 
-        # sleep for 3 seconds, allowing time for motor speed to adjust
-        time.sleep(3)
+        # sleep for 4 seconds, allowing time for motor speed to adjust
+        time.sleep(4)
+
+    def idle(self):
+        """Stops the device from spinning"""
+        self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
 
     def perform_scan(self):
         """Performs a complete 3d scan
@@ -159,6 +167,9 @@ def main():
 
         # Perform the scan
         scanner.perform_scan()
+
+        # Stop the scanner
+        scanner.idle()
 
 if __name__ == '__main__':
     main()
