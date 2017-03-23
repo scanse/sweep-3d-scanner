@@ -3,6 +3,7 @@ from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_Step
 import time
 import atexit
 import itertools
+import scanner_limit_switch
 
 
 class ScannerBase(object):
@@ -12,21 +13,26 @@ class ScannerBase(object):
         stepper: the stepper motor
     """
 
-    def __init__(self, stepper_steps_per_rev=None, stepper_motor_port=None):
+    def __init__(self, stepper_steps_per_rev=None, stepper_motor_port=None, switch=None):
         """Return a ScannerBase object
         :param steps_per_rev: the number of steps per revolution
         :param motor_port:  the motor port #
         """
-        # default to 200 steps/rev, motor port #1
+        # default to 400 steps/rev, motor port #1
         if stepper_steps_per_rev is None:
             stepper_steps_per_rev = 400
         if stepper_motor_port is None:
             stepper_motor_port = 2
+        if switch is None:
+            switch = scanner_limit_switch.LimitSwitch()
 
         # create a default object, no changes to I2C address or frequency
         self.motor_hat = Adafruit_MotorHAT()
         self.stepper = self.motor_hat.getStepper(
             stepper_steps_per_rev, stepper_motor_port)
+
+        # note the limit switch
+        self.switch = switch
 
         atexit.register(self.turn_off_motors)
 
@@ -36,9 +42,14 @@ class ScannerBase(object):
         """
         if num_steps is None:
             num_steps = 1
+        if num_steps < 0:
+            num_steps = abs(num_steps)
+            direction = Adafruit_MotorHAT.FORWARD
+        else:
+            direction = Adafruit_MotorHAT.BACKWARD
+
         for _ in itertools.repeat(None, num_steps):
-            self.stepper.oneStep(Adafruit_MotorHAT.BACKWARD,
-                                 Adafruit_MotorHAT.MICROSTEP)
+            self.stepper.oneStep(direction, Adafruit_MotorHAT.MICROSTEP)
 
     def move_degrees(self, num_deg=None):
         """Moves the stepper motor by the specified num_deg, as close as step resolution permits.
@@ -56,6 +67,42 @@ class ScannerBase(object):
         """Returns the number of steps per degree"""
         return 1.0 * self.get_num_steps_per_rev() / 360.0
 
+    def reset(self):
+        """Resets the base angle."""
+
+        # print 'Returning home quickly...'
+
+        # check that the switch is not already pressed (ie: edge case where a
+        # rising edge event won't occur)
+        if not self.switch.is_pressed():
+            # Move quickly backward to home angle, until hitting the limit
+            # switch.
+            self.switch.setup_event_detect()
+            while not self.switch.check_for_press():
+                self.stepper.oneStep(Adafruit_MotorHAT.FORWARD,
+                                     Adafruit_MotorHAT.SINGLE)
+                time.sleep(.03)
+            self.switch.destroy()
+
+        # print 'Hit limit switch...'
+
+        # Move forward off the switch
+        self.move_degrees(12)
+        time.sleep(1.5)
+
+        # print 'Returning home slowly...'
+
+        # check that the switch is not already pressed (ie: edge case where a
+        # rising edge event won't occur)
+        if not self.switch.is_pressed():
+            self.switch.setup_event_detect()
+            # Move slowly backward to home angle, until just hitting the limit
+            # switch
+            while not self.switch.check_for_press():
+                self.move_degrees(-1)
+                time.sleep(.2)
+            self.switch.destroy()
+
     def turn_off_motors(self):
         """Turns off stepper motor, recommended for auto-disabling motors on shutdown!"""
         self.motor_hat.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
@@ -69,12 +116,12 @@ def main():
     print "Creating base..."
     base = ScannerBase()
 
-    print base.get_steps_per_deg()
+    # print "Moving base 90 degrees..."
+    # for _ in itertools.repeat(None, 90):
+    #     base.move_degrees(1)
+    #     time.sleep(.1)  # sleep for 100 ms
 
-    print "Moving base 90 degrees..."
-    for _ in itertools.repeat(None, 90):
-        base.move_degrees(1)
-        time.sleep(.1)  # sleep for 100 ms
+    base.reset()
 
     print "Done!"
 

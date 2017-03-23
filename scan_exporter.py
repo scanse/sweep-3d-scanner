@@ -21,7 +21,8 @@ class ScanExporter(object):
     # Field names for the CSV
     # field_names = ['SCAN_INDEX', 'BASE_ANGLE',
     #              'ANGLE', 'DISTANCE', 'SIGNAL STRENGTH']
-    field_names = ['SCAN_INDEX', 'X', 'Y', 'Z', 'SIGNAL_STRENGTH']
+    field_names = ['SCAN_INDEX', 'X', 'Y', 'Z',
+                   'SIGNAL_STRENGTH']
 
     def __init__(self, file_name=None):
         """Return a ScanExporter object

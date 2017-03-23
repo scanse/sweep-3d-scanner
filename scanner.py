@@ -7,6 +7,9 @@ import scan_exporter
 import scan_utils
 import time
 import math
+import atexit
+import threading
+import sys
 
 
 class Scanner(object):
@@ -39,21 +42,47 @@ class Scanner(object):
         self.settings = settings
         self.exporter = exporter
 
+    def setup_base(self):
+        """Setup the base"""
+        print '\tResetting base...'
+        self.base.reset()
+
     def setup(self):
-        """Setups up the device according to the scan settings"""
-        self.device.reset()
-        # sleep for 5 seconds, allowing time for device to reset
-        time.sleep(5)
+        """Setup the scanner according to the scan settings"""
 
+        # in order to setup the device and base concurrently, setup the base in
+        # a dedicated thread
+        thr = threading.Thread(target=self.setup_base, args=(), kwargs={})
+        thr.start()
+
+        max_tries = 5
         # Set the motor speed and sample rate
-        self.device.set_motor_speed(self.settings.get_motor_speed())
-        self.device.set_sample_rate(self.settings.get_sample_rate())
+        while max_tries > 0:
+            try:
+                print '\tResetting device...'
+                self.device.reset()
 
-        print 'Motor Speed: {} Hz'.format(self.device.get_motor_speed())
-        print 'Sample Rate: {} Hz'.format(self.device.get_sample_rate())
+                # sleep for 5 seconds, allowing time for device to reset
+                time.sleep(5)
+                max_tries = max_tries - 1
+                self.device.set_motor_speed(self.settings.get_motor_speed())
+                self.device.set_sample_rate(self.settings.get_sample_rate())
+            except:  # catch *all* exceptions
+                print 'Error: {}'.format(sys.exc_info()[0])
+                if max_tries <= 0:
+                    print 'Exceeded maximum number of tries... exiting.'
+                    exit()
+            else:
+                break
+
+        print '\tMotor Speed: {} Hz'.format(self.device.get_motor_speed())
+        print '\tSample Rate: {} Hz'.format(self.device.get_sample_rate())
 
         # sleep for 4 seconds, allowing time for motor speed to adjust
         time.sleep(4)
+
+        # wait for the base setup to complete, then join and return
+        thr.join()
 
     def idle(self):
         """Stops the device from spinning"""
@@ -114,6 +143,7 @@ class Scanner(object):
             # Collect the appropriate number of 2D scans
             if scan_count == num_sweeps:
                 break
+        # Stop scanning
         self.device.stop_scanning()
 
     def get_base(self):
@@ -163,12 +193,15 @@ def main():
         scanner = Scanner(base, sweep, settings)
 
         # Setup the scanner
+        print "Running setup..."
         scanner.setup()
 
         # Perform the scan
+        print "Performing scan..."
         scanner.perform_scan()
 
         # Stop the scanner
+        print "Setting the scanner to idle..."
         scanner.idle()
 
 if __name__ == '__main__':
