@@ -44,44 +44,54 @@ class Scanner(object):
 
     def setup_base(self):
         """Setup the base"""
-        print '\tResetting base...'
         self.base.reset()
+
+    def setup_device(self):
+        """Setup the device"""
+        reset_min_duration = 4.5
+        time_between_commands = 0.5
+
+        # Reset the device
+        self.device.reset()
+
+        # sleep for at least the minimum time required to reset the device
+        print 'Resetting device, waiting {} seconds'.format(reset_min_duration)
+        time.sleep(reset_min_duration)
+
+        # Set the motor speed
+        time.sleep(time_between_commands)
+        adjust_start_time = time.time()
+        self.device.set_motor_speed(self.settings.get_motor_speed())
+
+        # Set the sample rate
+        time.sleep(time_between_commands)
+        self.device.set_sample_rate(self.settings.get_sample_rate())
+
+        # Confirm motor speed
+        time.sleep(time_between_commands)
+        print '\tMotor Speed: {} Hz'.format(self.device.get_motor_speed())
+
+        # Confirm sample rate
+        time.sleep(time_between_commands)
+        print '\tSample Rate: {} Hz'.format(self.device.get_sample_rate())
+
+        # Allow at least 4 seconds for motor speed to adjust
+        sleep_duration = 4 - adjust_start_time
+        if sleep_duration > 0:
+            time.sleep(sleep_duration)
 
     def setup(self):
         """Setup the scanner according to the scan settings"""
+        # setup the device and base concurrently
 
-        # in order to setup the device and base concurrently, setup the base in
-        # a dedicated thread
+        # setup the base in a dedicated thread
         thr = threading.Thread(target=self.setup_base, args=(), kwargs={})
         thr.start()
 
-        max_tries = 5
-        # Set the motor speed and sample rate
-        while max_tries > 0:
-            try:
-                print '\tResetting device...'
-                self.device.reset()
+        # setup the device in the main thread
+        self.setup_device()
 
-                # sleep for 5 seconds, allowing time for device to reset
-                time.sleep(5)
-                max_tries = max_tries - 1
-                self.device.set_motor_speed(self.settings.get_motor_speed())
-                self.device.set_sample_rate(self.settings.get_sample_rate())
-            except:  # catch *all* exceptions
-                print 'Error: {}'.format(sys.exc_info()[0])
-                if max_tries <= 0:
-                    print 'Exceeded maximum number of tries... exiting.'
-                    exit()
-            else:
-                break
-
-        print '\tMotor Speed: {} Hz'.format(self.device.get_motor_speed())
-        print '\tSample Rate: {} Hz'.format(self.device.get_sample_rate())
-
-        # sleep for 4 seconds, allowing time for motor speed to adjust
-        time.sleep(4)
-
-        # wait for the base setup to complete, then join and return
+        # Wait for the base setup to complete, then join and return
         thr.join()
 
     def idle(self):
@@ -146,6 +156,14 @@ class Scanner(object):
         # Stop scanning
         self.device.stop_scanning()
 
+    def shutdown(self, msg=None):
+        """Print message and shutdown"""
+        if msg is not None:
+            print '{}'.format(msg)
+
+        print 'Shutting down.'
+        exit()
+
     def get_base(self):
         """Returns the ScannerBase object for this scanner"""
         return self.base
@@ -179,30 +197,39 @@ class Scanner(object):
 
 def main():
     """Creates a 3D scanner and gather 90 degrees worth of scan"""
-    with Sweep() as sweep:
-        # Create a scan settings obj
-        settings = scan_settings.ScanSettings(
-            sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
-            sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
-            120,                                    # starting angle of deadzone
-            180,                                    # angular range of scan
-            -90)                                    # mount angle of device relative to horizontal
-        # Create a default base obj
-        base = scanner_base.ScannerBase()
-        # Create a scanner object
-        scanner = Scanner(base, sweep, settings)
+    print 'Running scanner.py main script'
+    try:
+        with Sweep() as sweep:
+            # Create a scan settings obj
+            settings = scan_settings.ScanSettings(
+                sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
+                sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
+                120,                            # starting angle of deadzone
+                180,                            # angular range of scan
+                -90)                            # mount angle of device relative to horizontal
+            # Create a default base obj
+            base = scanner_base.ScannerBase()
+            # Create a scanner object
+            scanner = Scanner(base, sweep, settings)
 
-        # Setup the scanner
-        print "Running setup..."
-        scanner.setup()
+            # Setup the scanner
+            print "Running setup..."
+            scanner.setup()
 
-        # Perform the scan
-        print "Performing scan..."
-        scanner.perform_scan()
+            # Perform the scan
+            print "Performing scan..."
+            scanner.perform_scan()
 
-        # Stop the scanner
-        print "Setting the scanner to idle..."
-        scanner.idle()
+            # Stop the scanner
+            print "Setting the scanner to idle..."
+            scanner.idle()
+    except KeyboardInterrupt:
+        print 'User terminated the program. Please disconnect and reconnect sensor before running the script again.'
+        exit()
+    except:
+        print 'Error: {}'.format(sys.exc_info()[0])
+        print 'An error terminated the program. Please disconnect and reconnect sensor before running the script again.'
+        exit()
 
 if __name__ == '__main__':
     main()
