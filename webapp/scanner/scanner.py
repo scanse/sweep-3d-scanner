@@ -6,10 +6,12 @@ import scanner_base
 import scan_exporter
 import scan_utils
 import time
+import datetime
 import math
 import atexit
 import threading
 import sys
+import argparse
 
 
 class Scanner(object):
@@ -21,17 +23,17 @@ class Scanner(object):
         exporter: the scan exporter
     """
 
-    def __init__(self, base=None, device=None, settings=None, exporter=None):
+    def __init__(self, device=None, base=None, settings=None, exporter=None):
         """Return a Scanner object
         :param base:  the scanner base
         :param device: the sweep device
         :param settings: the scan settings
         :param exporter: the scan exporter
         """
+        if device is None:
+            self.shutdown("Please provide a device to scanner constructor.")
         if base is None:
             base = scanner_base.ScannerBase()
-        if device is None:
-            device = Sweep()
         if settings is None:
             settings = scan_settings.ScanSettings()
         if exporter is None:
@@ -141,8 +143,13 @@ class Scanner(object):
                 continue
 
             # Export the scan
-            self.exporter.export_2D_scan(scan, scan_count, self.settings.get_mount_angle(
-            ), angle_between_sweeps * scan_count)
+            self.exporter.export_2D_scan(
+                scan,
+                scan_count,
+                self.settings.get_mount_angle(),
+                angle_between_sweeps * scan_count,
+                False
+            )
 
             # Wait for the device to reach the threshold angle for movement
             time.sleep(self.settings.get_time_to_deadzone_sec())
@@ -195,22 +202,37 @@ class Scanner(object):
         self.settings = settings
 
 
-def main():
-    """Creates a 3D scanner and gather 90 degrees worth of scan"""
-    print 'Running scanner.py main script'
+def main(arg_dict):
+    """Creates a 3D scanner and gather a scan"""
     try:
         with Sweep() as sweep:
             # Create a scan settings obj
             settings = scan_settings.ScanSettings(
-                sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
-                sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
-                120,                            # starting angle of deadzone
-                180,                            # angular range of scan
-                -90)                            # mount angle of device relative to horizontal
-            # Create a default base obj
-            base = scanner_base.ScannerBase()
+                # desired motor speed setting
+                int(arg_dict['motor_speed']),
+                # desired sample rate setting
+                int(arg_dict['sample_rate']),
+                # starting angle of deadzone
+                int(arg_dict['dead_zone']),
+                int(arg_dict['angular_range']),     # angular range of scan
+                # mount angle of device relative to horizontal
+                int(arg_dict['mount_angle'])
+            )
+
+            # settings = scan_settings.ScanSettings(
+            #     sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
+            #     sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
+            #     120,                            # starting angle of deadzone
+            #     180,                            # angular range of scan
+            #     -90)                            # mount angle of device relative to horizontal
+
+            # Create an exporter
+            exporter = scan_exporter.ScanExporter(
+                file_name=arg_dict['output']
+            )
             # Create a scanner object
-            scanner = Scanner(base, sweep, settings)
+            scanner = Scanner(
+                device=sweep, settings=settings, exporter=exporter)
 
             # Setup the scanner
             print "Running setup..."
@@ -232,4 +254,30 @@ def main():
         exit()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Creates a 3D scanner and performs a scan')
+    parser.add_argument('-ms', '--motor_speed',
+                        help='Motor Speed (integer from 1:10)',
+                        default=sweep_constants.MOTOR_SPEED_1_HZ, required=False)
+    parser.add_argument('-sr', '--sample_rate',
+                        help='Sample Rate(either 500, 750 or 1000)',
+                        default=sweep_constants.SAMPLE_RATE_500_HZ, required=False)
+    parser.add_argument('-ar', '--angular_range',
+                        help='Angular range of scan (integer from 1:180)',
+                        default=180, required=False)
+    parser.add_argument('-ma', '--mount_angle',
+                        help='Mount angle of device relative to horizontal',
+                        default=-90, required=False)
+    parser.add_argument('-dz', '--dead_zone',
+                        help='Starting angle of deadzone',
+                        default=120, required=False)
+    default_filename = "output_scans/Scan " + datetime.datetime.fromtimestamp(
+        time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
+    parser.add_argument('-o', '--output',
+                        help='Filepath for the exported scan',
+                        default=default_filename, required=False)
+
+    args = parser.parse_args()
+    argsdict = vars(args)
+
+    main(argsdict)

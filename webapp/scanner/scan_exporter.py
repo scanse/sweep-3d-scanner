@@ -30,13 +30,16 @@ class ScanExporter(object):
         """
         # default to timestamp file name
         if file_name is None:
-            file_name = "Sweep-360-Scan " + datetime.datetime.fromtimestamp(
+            file_name = "Scan " + datetime.datetime.fromtimestamp(
                 time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
 
-        self.file_name = file_name
+        self.output_dir = os.path.split(file_name)[0]
+        self.file_name = os.path.split(file_name)[1]
+
         # Create an output directory for the scans if it doesn't exit
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+
         # Create the file
         self.file = open(self.get_relative_file_path(), 'wb')
         # Create a writer to write to the CSV file
@@ -44,18 +47,19 @@ class ScanExporter(object):
         # Write the header to the CSV
         self.writer.writeheader()
 
-    def export_2D_scan(self, scan, scan_index, mount_angle, base_angle):
+    def export_2D_scan(self, scan, scan_index, mount_angle, base_angle, CCW):
         """Exports the scan to the file
         :param scan:
         :param scan_index:
         :param mount_angle:
         :param base_angle:
+        :param CCW: True if base rotates CCW during scan
         """
         print "Scan #{},\tcontains {} samples,\tangle: {} deg".format(
             scan_index, len(scan.samples), base_angle)
 
         converted_coords = scan_utils.transform_scan(
-            scan, mount_angle, base_angle)
+            scan, mount_angle, base_angle if CCW else -base_angle)
 
         for n, sample in enumerate(scan.samples):
             self.writer.writerow({
@@ -86,7 +90,7 @@ def main():
                          for n in range(11)]
         dummy_scan = sweeppy.Scan(samples=dummy_samples)
 
-        exporter.export_2D_scan(dummy_scan, 0, 90, base_angle * 30)
+        exporter.export_2D_scan(dummy_scan, 0, 90, base_angle * 30, False)
 
 if __name__ == '__main__':
     main()

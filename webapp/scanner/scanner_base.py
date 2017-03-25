@@ -116,12 +116,12 @@ def main():
     print "Creating base..."
     base = ScannerBase()
 
-    # print "Moving base 90 degrees..."
-    # for _ in itertools.repeat(None, 90):
-    #     base.move_degrees(1)
-    #     time.sleep(.1)  # sleep for 100 ms
+    print "Moving base 90 degrees..."
+    for _ in itertools.repeat(None, 90):
+        base.move_degrees(1)
+        time.sleep(.1)  # sleep for 100 ms
 
-    base.reset()
+    #base.reset()
 
     print "Done!"
 

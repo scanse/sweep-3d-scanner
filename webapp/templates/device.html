@@ -6,7 +6,7 @@
     <div class="container">
         <div class="row">
             
-            <h2>Scan Settings Form</h2>
+            <h2>Device Controls</h2>
             
             <a class="btn btn-primary" href="/" role="button">Return Home</a>
             
@@ -14,16 +14,12 @@
             <div class="col-xs-10">
                 <form  action="" method="post" role="form">
                     {{ form.csrf_token }}
-                    <div class="form-group">
-                        {% from "_formhelpers.html" import render_field %}
-                        {{ render_field(form.scan_type) }}
-                        {{ render_field(form.motor_speed) }}
-                        {{ render_field(form.sample_rate) }}
-                        {{ render_field(form.file_name) }}
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Perform Scan</button>
+                    <br><br>
+                    {{ form.idle }}
+                    {{ form.restart }}
+                    {{ form.shutdown }}                    
                 </form>
-
+                
                 <br>
                 
                 {% with messages = get_flashed_messages(with_categories=true) %}
