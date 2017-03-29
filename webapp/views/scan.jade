@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  div.container
+    if bIsScanning
+        h1 Scan in Progress
+        h3 Angular Range: #{angular_range}
+        h3 Motor Speed: #{motor_speed}
+        h3 Sample Rate: #{sample_rate}
+        h3 Filename: #{file_name}
+    else
+        a.btn.btn-primary(href="/" role="button") Return Home
+        form(action="/scan", method="post")
+            div.form-group
+                label(for="id_ScanType") Scan Type:
+                select(id="id_ScanType", name="input_ScanType")
+                    each value, key in form_options.AvailableScanTypes
+                        option(value=value) #{key}
+            div.form-group
+                label(for="id_MotorSpeed") Motor Speed:
+                select(id="id_MotorSpeed", name="input_MotorSpeed")
+                    each value, key in form_options.AvailableMotorSpeeds
+                        option(value=value) #{key}
+            div.form-group
+                label(for="id_SampleRate") Sample Rate:
+                select(id="id_SampleRate", name="input_SampleRate")
+                    each value, key in form_options.AvailableSampleRates
+                        option(value=value) #{key}
+            div.form-group
+                label(for="id_FileName") File Name:
+                input(type="text", id="id_FileName", name="input_FileName")
+            button.btn.btn-primary.btn-block(type="submit") Perform Scan!

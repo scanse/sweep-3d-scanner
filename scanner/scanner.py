@@ -50,7 +50,8 @@ class Scanner(object):
 
     def setup_device(self):
         """Setup the device"""
-        reset_min_duration = 4.5
+        print "Setup Device..."
+        reset_min_duration = 7
         time_between_commands = 0.5
 
         # Reset the device
@@ -204,8 +205,11 @@ class Scanner(object):
 
 def main(arg_dict):
     """Creates a 3D scanner and gather a scan"""
+    print "Main..."
     try:
+        print "trying..."
         with Sweep() as sweep:
+            print "here"
             # Create a scan settings obj
             settings = scan_settings.ScanSettings(
                 # desired motor speed setting
@@ -230,6 +234,7 @@ def main(arg_dict):
             exporter = scan_exporter.ScanExporter(
                 file_name=arg_dict['output']
             )
+            print "Creating Scanner..."
             # Create a scanner object
             scanner = Scanner(
                 device=sweep, settings=settings, exporter=exporter)

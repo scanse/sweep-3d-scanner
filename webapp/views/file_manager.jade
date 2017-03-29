@@ -1,0 +1,25 @@
+extends layout
+
+block content
+  div.container
+    h1 File Manager
+
+    a.btn.btn-primary(href="/" role="button") Return Home
+    br
+    
+    if bShowMsg
+        div.alert.alert-warning(role="alert") 
+            span #{msg}
+    if files.length > 0
+        form(action="/file_manager", method="post")
+            div.form-group
+                label File:
+                select(name="input_FileName")
+                    each file, i in files
+                        option(value=file) #{file}
+            button.btn.btn-primary(type="submit" name="submit" value="download") Download File!
+            button.btn.btn-danger(type="submit" name="submit" value="delete") Delete File!
+    else
+        div.alert.alert-warning(role="alert") 
+            span There are currently no files.
+    
