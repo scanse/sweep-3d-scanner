@@ -28,41 +28,38 @@ app.use(router);
 
 router.route('/')
     .all(function (req, res, next) {
-        console.log('Someone made a request!');
+        //console.log('Someone made a request!');
         next();
     })
     .get(function (req, res, next) {
-        res.render('file_manager', {
-            bShowMsg: false,
+        res.render('file_manager');
+    })
+
+router.route('/request_scan_files')
+    .get(function (req, res, next) {
+        res.send({
             files: getScanFiles()
         });
     })
-    .post(function (req, res, next) {
-        console.log('received post');
-        let actionType = req.body.submit;
-        let filename = req.body.input_FileName;
-        switch (actionType) {
-            case 'download':
-                console.log(`Downloading... ${filename}`);
-                if (checkFile(filename))
-                    res.download(path.join('./output_scans/', filename));
-                else
-                    res.render('file_manager', {
-                        bShowMsg: true,
-                        msg: `File (${filename}) does not exist...`,
-                        files: getScanFiles()
-                    });
-                break;
-            case 'delete':
-                console.log(`Deleting...${filename}`);
-                deleteFile(filename);
-                res.render('file_manager', {
-                    bShowMsg: true,
-                    msg: `Successfully deleted ${filename}`,
-                    files: getScanFiles()
-                });
-                break;
-        }
+
+router.route('/delete_file')
+    .get(function (req, res, next) {
+        let filename = req.query.file;
+        console.log(`Deleting...${filename}`);
+        deleteFile(filename);
+        res.send({
+            bSuccessfullyDeletedFile: true,
+            file: filename,
+            updatedFileList: getScanFiles()
+            //errorMsg: ""
+        });
+    })
+
+router.route('/download_file/:file(*)')
+    .get(function (req, res, next) {
+        let filename = req.params.file;
+        if (checkFile(filename))
+            res.download(path.join('./output_scans/', filename));
     })
 
 function getScanFiles() {

@@ -27,50 +27,29 @@ var router = express.Router();
 app.use(router);
 
 router.route('/')
-    .post(function (req, res) {
-        // submitted scan form, now initiating a scan
-        var scan_params = {};
-
-        // read the scan parameters from the posted form
-        scan_params.motor_speed = Number(req.body.input_MotorSpeed);
-        scan_params.sample_rate = Number(req.body.input_SampleRate);
-        scan_params.angular_range = Number(req.body.input_ScanType);
-        scan_params.file_name = req.body.input_FileName;
-        scan_params.bIsScanning = true;
-
-        // command the scanner to perform a scan
-        performScan(scan_params);
-
-        // inform the user that a scan is in progress
-        res.render('scan', scan_params);
-    })
     .get(function (req, res) {
-        // navigated to this page, want to present the scan form
-        let page_params = {
-            bIsScanning : false,
-            form_options : ScanFormOptions
-        };
-        res.render('scan', page_params);
+        res.render('scan');
     })
 
-const ScanFormOptions = {
-    'AvailableScanTypes' : {
-        'Full Scan (360 deg)': 180,
-        'Half Scan (180 deg)': 90,
-        'Partial Scan (90 deg)': 45,
-        'Partial Scan (30 deg)': 15
-    },
-    'AvailableMotorSpeeds' : {
-        '1 Hz': 1,
-        '2 Hz': 2,
-        '3 Hz': 3
-    },
-    'AvailableSampleRates' : {
-        '500 Hz': 500,
-        '750 Hz': 750,
-        '1000 Hz': 1000
-    }
-};
+let progress = 0;
+router.route('/update_progress_bar')
+    .get(function (req, res, next) {
+        res.send({ percentage: progress++ });
+    })
+
+router.route('/submit_scan_request')
+    .get(function (req, res, next) {
+        var data = req.query;
+
+        console.log(data);
+
+        res.send({
+            bSuccessfullyStartedScan: true,
+            //errorMsg: "testing error msg...",
+            scanParams: {}
+        });
+    })
+
 
 
 var zmq = require('zeromq');
@@ -82,14 +61,14 @@ cmd_socket.bindSync('tcp://*:3000');
 console.log('Publisher bound to port 3000');
 
 function performScan(params) {
-  console.log('sending a multipart message envelope');
-  console.log(JSON.stringify(params));
-  cmd_socket.send(['perform_scan', JSON.stringify(params)]);
+    console.log('sending a multipart message envelope');
+    console.log(JSON.stringify(params));
+    cmd_socket.send(['cmd_msg', 'perform_scan', JSON.stringify(params)]);
 }
 
 process.on('SIGINT', function () {
-  cmd_socket.close();
-  process.exit();
+    cmd_socket.close();
+    process.exit();
 });
 
 

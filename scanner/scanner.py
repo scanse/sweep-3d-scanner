@@ -208,7 +208,7 @@ def main(arg_dict):
     print "Main..."
     try:
         print "trying..."
-        with Sweep() as sweep:
+        with Sweep('/dev/ttyUSB0') as sweep:
             print "here"
             # Create a scan settings obj
             settings = scan_settings.ScanSettings(
@@ -251,11 +251,34 @@ def main(arg_dict):
             print "Setting the scanner to idle..."
             scanner.idle()
     except KeyboardInterrupt:
-        print 'User terminated the program. Please disconnect and reconnect sensor before running the script again.'
+        print 'User terminated the program.'
+        print 'Please disconnect and reconnect sensor before running the script again.'
         exit()
     except:
         print 'Error: {}'.format(sys.exc_info()[0])
-        print 'An error terminated the program. Please disconnect and reconnect sensor before running the script again.'
+        print 'An error terminated the program.'
+        print 'Please disconnect and reconnect sensor before running the script again.'
+        exit()
+
+
+def perform_scan(scan_params):
+    """Performs a scan with the scan parameters"""
+    try:
+        print "Testing..."
+        print "From scanner... {} {} {} {}".format(
+            scan_params.motor_speed,
+            scan_params.sample_rate,
+            scan_params.angular_range,
+            scan_params.file_name
+        )
+    except KeyboardInterrupt:
+        print 'User terminated the program.'
+        print 'Please disconnect and reconnect sensor before running the script again.'
+        exit()
+    except:
+        print 'Error: {}'.format(sys.exc_info()[0])
+        print 'An error terminated the program.'
+        print 'Please disconnect and reconnect sensor before running the script again.'
         exit()
 
 if __name__ == '__main__':

@@ -7,19 +7,17 @@ block content
     a.btn.btn-primary(href="/" role="button") Return Home
     br
     
-    if bShowMsg
-        div.alert.alert-warning(role="alert") 
-            span #{msg}
-    if files.length > 0
-        form(action="/file_manager", method="post")
-            div.form-group
-                label File:
-                select(name="input_FileName")
-                    each file, i in files
-                        option(value=file) #{file}
-            button.btn.btn-primary(type="submit" name="submit" value="download") Download File!
-            button.btn.btn-danger(type="submit" name="submit" value="delete") Delete File!
-    else
-        div.alert.alert-warning(role="alert") 
-            span There are currently no files.
-    
+    form
+        div.form-group
+            label File:
+            select(id="select_FileName")
+            button.btn.btn-primary(id="btn_DownloadFile", type="button" name="submit" value="download") Download File!
+            button.btn.btn-danger(id="btn_DeleteFile", type="button" name="submit" value="delete") Delete File!
+
+    div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
+    div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
+    div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
+
+block scripts
+    script(src='/javascript/utils.js')
+    script(src='/javascript/file_manager/main.js')
