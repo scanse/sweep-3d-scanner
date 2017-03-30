@@ -31,26 +31,44 @@ router.route('/')
         res.render('scan');
     })
 
-let progress = 0;
-router.route('/update_progress_bar')
+router.route('/request_update')
     .get(function (req, res, next) {
-        res.send({ percentage: progress++ });
+        let statusObj = getScannerStatus();
+        res.send(statusObj);
     })
 
 router.route('/submit_scan_request')
     .get(function (req, res, next) {
         var data = req.query;
-
-        console.log(data);
+        //console.log(data);
+        performScan(data);
 
         res.send({
             bSuccessfullyStartedScan: true,
             //errorMsg: "testing error msg...",
-            scanParams: {}
+            scanParams: data //FIXME: currently just sending the same data back
         });
     })
 
 
+let progress = 0;
+function getScannerStatus() {
+    let obj = {
+        scanStatus: null,
+        percentage: null
+    }
+
+    if (true) {
+        obj.scanStatus = "in-progress"
+        obj.percentage = progress++;
+    }
+    else {
+        //obj.scanStatus = "setup"
+        //obj.scanStatus = "finished"
+    }
+
+    return obj;
+}
 
 var zmq = require('zeromq');
 
@@ -62,7 +80,7 @@ console.log('Publisher bound to port 3000');
 
 function performScan(params) {
     console.log('sending a multipart message envelope');
-    console.log(JSON.stringify(params));
+    //console.log(JSON.stringify(params));
     cmd_socket.send(['cmd_msg', 'perform_scan', JSON.stringify(params)]);
 }
 

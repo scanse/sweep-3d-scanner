@@ -1,20 +1,42 @@
+/**
+ * Manages client side logic for the scan page
+ */
+
 $(document).ready(function () {
     initScanForm();
 });
 
-function update_progress_bar() {
+
+function requestUpdate() {
     $.ajax({
-        url: "/scan/update_progress_bar"
+        url: "/scan/request_update"
     }).done(function (data) {
-        $('#pb_Scan').css('width', data.percentage + '%').attr('aria-valuenow', data.percentage).html(`${data.percentage}%`);
-        if (data.percentage < 0)
-            showScanFailure("Something went wrong with the scan!");
-        else if (data.percentage < 100)
-            setTimeout(update_progress_bar, 150);
-        else
-            showScanSuccess("Finished Scan!");
+        switch (data.scanStatus) {
+            case 'in-progress':
+                $('#span_ScanStatus').html('In Progress...');
+                updateProgressBar(data.percentage);
+                if (data.percentage < 100)
+                    setTimeout(requestUpdate, 300);
+                break;
+            case 'setup':
+                console.log("Scanner is setting up...");
+                $('#span_ScanStatus').html('Running Setup Routine...');
+                break;
+            case 'finished':
+                $('#span_ScanStatus').html('Scan Complete!');
+                showScanSuccess("Finished Scan!");
+                break;
+            default:
+                break;
+        }
+
     });
 }
+
+function updateProgressBar(percentage) {
+    $('#pb_Scan').css('width', percentage + '%').attr('aria-valuenow', percentage).html(`${percentage}%`);
+}
+
 
 function initScanForm() {
     initScanTypeDropdown();
@@ -22,8 +44,6 @@ function initScanForm() {
     initSampleRateDropdown();
     $("#btn_PerformScan").click(requestScan);
 }
-
-
 
 //initializes the selectable options for the scan type select dropdown
 function initScanTypeDropdown() {
@@ -90,7 +110,7 @@ function requestScan() {
         console.log(data);
         if (data.bSuccessfullyStartedScan) {
             showScanProgress(data.scanParams);
-            update_progress_bar();
+            requestUpdate();
         }
         else
             showScanFailure(data.errorMsg);
@@ -114,12 +134,18 @@ function readSpecifiedScanOptions() {
     return options;
 }
 
-
 function showScanProgress(params) {
     console.log("Showing scan progress");
     $("#div_ScanResults").hide();
     $("#div_ScanForm").hide();
     $("#div_ScanProgress").show();
+
+    console.log(params);
+    // display the scan settings
+    $("#span_ScanType").html(`${params.angular_range * 2} degree scan`);
+    $("#span_MotorSpeed").html(params.motor_speed);
+    $("#span_SampleRate").html(params.sample_rate);
+    $("#span_FileName").html(params.file_name);
 }
 
 function showScanFailure(msg) {

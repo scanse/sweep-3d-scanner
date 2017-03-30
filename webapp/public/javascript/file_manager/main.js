@@ -1,3 +1,7 @@
+/**
+ * Manages client side logic for the file manager page
+ */
+
 $(document).ready(function () {
     init();
 });
