@@ -6,38 +6,7 @@ $(document).ready(function () {
     initScanForm();
 });
 
-
-function requestUpdate() {
-    $.ajax({
-        url: "/scan/request_update"
-    }).done(function (data) {
-        switch (data.scanStatus) {
-            case 'in-progress':
-                $('#span_ScanStatus').html('In Progress...');
-                updateProgressBar(data.percentage);
-                if (data.percentage < 100)
-                    setTimeout(requestUpdate, 300);
-                break;
-            case 'setup':
-                console.log("Scanner is setting up...");
-                $('#span_ScanStatus').html('Running Setup Routine...');
-                break;
-            case 'finished':
-                $('#span_ScanStatus').html('Scan Complete!');
-                showScanSuccess("Finished Scan!");
-                break;
-            default:
-                break;
-        }
-
-    });
-}
-
-function updateProgressBar(percentage) {
-    $('#pb_Scan').css('width', percentage + '%').attr('aria-valuenow', percentage).html(`${percentage}%`);
-}
-
-
+// Initialize the scan form, by populating all the input fields with appropriate options
 function initScanForm() {
     initScanTypeDropdown();
     initMotorSpeedDropdown();
@@ -99,6 +68,90 @@ function initSampleRateDropdown() {
     }
 }
 
+// Show the portion of the page that deals with scan progress
+function showScanProgress(params) {
+    $("#div_ScanResults").hide();
+    $("#div_ScanForm").hide();
+    $("#div_ScanProgress").show();
+
+    // display the scan settings
+    $("#span_ScanType").html(`${params.angular_range * 2} degree scan`);
+    $("#span_MotorSpeed").html(params.motor_speed);
+    $("#span_SampleRate").html(params.sample_rate);
+    $("#span_FileName").html(params.file_name);
+}
+
+// Show the portion of the page that deals with scan failure
+function showScanFailure(msg) {
+    console.log(`Scan Failed:  ${msg}`);
+    $("#div_ScanForm").hide();
+    $("#div_ScanProgress").hide();
+    $("#div_ScanResults").show();
+
+    $("#alert_Success").html('');
+    $("#alert_Success").hide();
+    $("#alert_Failure").html(msg);
+    $("#alert_Failure").show();
+}
+
+// Show the portion of the page that deals with scan success
+function showScanSuccess(msg) {
+    console.log(`Scan Failed:  ${msg}`);
+    $("#div_ScanForm").hide();
+    $("#div_ScanProgress").hide();
+    $("#div_ScanResults").show();
+
+    $("#alert_Failure").html('');
+    $("#alert_Failure").hide();
+    $("#alert_Success").html(msg);
+    $("#alert_Success").show();
+}
+
+// Update the progress bar for scan progress
+function updateProgressBar(percentage) {
+    $('#pb_Scan').css('width', percentage + '%').attr('aria-valuenow', percentage).html(`${percentage}%`);
+}
+
+// Requests an update regarding scan progress
+function requestUpdate() {
+    $.ajax({
+        url: "/scan/request_update"
+    }).done(function (data) {
+        if (typeof data === 'undefined' || !data || data === null) {
+            setTimeout(requestUpdate, 300);
+            return
+        }
+
+        switch (data.status) {
+            case 'failed':
+                $('#span_ScanStatus').html(data.msg);
+                showScanFailure(data.msg);
+                break;
+            case 'scan':
+                $('#span_ScanStatus').html(data.msg);
+                let percentage = calcPercentage(data.remaining, data.duration);
+                updateProgressBar(percentage);
+                setTimeout(requestUpdate, 300);
+                break;
+            case 'setup':
+                $('#span_ScanStatus').html(data.msg);
+                updateProgressBar(0);
+                setTimeout(requestUpdate, 300);
+                break;
+            case 'complete':
+                $('#span_ScanStatus').html(data.msg);
+                showScanSuccess(data.msg);
+                break;
+            default:
+                break;
+        }
+
+    }).fail(function () {
+        console.log("Ajax request failed");
+    });
+}
+
+// Request that a scan be initiated
 function requestScan() {
     let options = readSpecifiedScanOptions();
 
@@ -108,15 +161,19 @@ function requestScan() {
         dataType: "json"
     }).done(function (data) {
         console.log(data);
-        if (data.bSuccessfullyStartedScan) {
+        if (data.bSumittedScanRequest) {
+            //FIXME: only show progress when the scanner actually returns an update
             showScanProgress(data.scanParams);
             requestUpdate();
         }
         else
             showScanFailure(data.errorMsg);
+    }).fail(function () {
+        console.log("Ajax request failed");
     });
 }
 
+// Read the currently selected scan options from the form
 function readSpecifiedScanOptions() {
     let options = {};
 
@@ -132,42 +189,4 @@ function readSpecifiedScanOptions() {
     options.file_name = textInputHasValue("#input_FileName") ? $("#input_FileName").val() : `Scan ${Date.now()}`;
 
     return options;
-}
-
-function showScanProgress(params) {
-    console.log("Showing scan progress");
-    $("#div_ScanResults").hide();
-    $("#div_ScanForm").hide();
-    $("#div_ScanProgress").show();
-
-    console.log(params);
-    // display the scan settings
-    $("#span_ScanType").html(`${params.angular_range * 2} degree scan`);
-    $("#span_MotorSpeed").html(params.motor_speed);
-    $("#span_SampleRate").html(params.sample_rate);
-    $("#span_FileName").html(params.file_name);
-}
-
-function showScanFailure(msg) {
-    console.log(`Scan Failed:  ${msg}`);
-    $("#div_ScanForm").hide();
-    $("#div_ScanProgress").hide();
-    $("#div_ScanResults").show();
-
-    $("#alert_Success").html('');
-    $("#alert_Success").hide();
-    $("#alert_Failure").html(msg);
-    $("#alert_Failure").show();
-}
-
-function showScanSuccess(msg) {
-    console.log(`Scan Failed:  ${msg}`);
-    $("#div_ScanForm").hide();
-    $("#div_ScanProgress").hide();
-    $("#div_ScanResults").show();
-
-    $("#alert_Failure").html('');
-    $("#alert_Failure").hide();
-    $("#alert_Success").html(msg);
-    $("#alert_Success").show();
 }

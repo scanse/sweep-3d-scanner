@@ -33,8 +33,11 @@ class ScanExporter(object):
             file_name = "Scan " + datetime.datetime.fromtimestamp(
                 time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
 
-        self.output_dir = os.path.split(file_name)[0]
+        #self.output_dir = os.path.split(file_name)[0]
         self.file_name = os.path.split(file_name)[1]
+
+        print self.output_dir
+        print self.file_name
 
         # Create an output directory for the scans if it doesn't exit
         if not os.path.exists(self.output_dir):

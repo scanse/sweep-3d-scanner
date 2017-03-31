@@ -12,6 +12,7 @@ class MsgPerformScan(object):
     def __init__(self, jsonString):
         self.__dict__ = json.loads(jsonString)
 
+
 class Communicator(object):
     """Handles communication via messages.
     Attributes:
@@ -20,13 +21,15 @@ class Communicator(object):
         parent_app: the application that created this communicator
     """
 
-    def __init__(self, parent_app=None, address=None, port=None):
+    def __init__(self, parent_app=None, address=None, sub_port=None, pub_port=None):
         """Return a ScannerApp object
         """
         if address is None:
             address = "localhost"
-        if port is None:
-            port = 3000
+        if sub_port is None:
+            sub_port = 3000
+        if pub_port is None:
+            pub_port = 5000
         if parent_app is None:
             parent_app = self
 
@@ -37,15 +40,17 @@ class Communicator(object):
 
         # Connect a subscriber socket to listen for commands
         self.cmd_subscriber = self.context.socket(zmq.SUB)
-        self.cmd_subscriber.connect('tcp://{}:{}'.format(address, port))
+        self.cmd_subscriber.connect('tcp://{}:{}'.format(address, sub_port))
         self.cmd_subscriber.setsockopt(zmq.SUBSCRIBE, "cmd_msg")
 
         # Bind a publisher socket to publish status updates
         # ...
+        self.update_publisher = self.context.socket(zmq.PUB)
+        self.update_publisher.bind('tcp://*:{}'.format(pub_port))
 
         time.sleep(1)
 
-        #self.wait_for_command()
+        # self.wait_for_command()
 
         atexit.register(self.shutdown)
 
@@ -68,16 +73,16 @@ class Communicator(object):
             topic = parts[0]
             cmd_type = parts[1]
             msg = parts[2]
-
-            self.process_msg(cmd_type, msg)
+            data = self.process_msg(cmd_type, msg)
+            return {'topic': topic, 'cmd_type': cmd_type, 'data': data}
 
     def process_msg(self, cmd_type, msg):
         """Process a received command"""
         if cmd_type == "perform_scan":
-            scan_params = MsgPerformScan(msg)
-            self.parent_app.handle_command(cmd_type, scan_params)
+            return MsgPerformScan(msg)
         else:
             print "{} is not a recognized command type.".format(cmd_type)
+            return None
 
     def handle_command(self, cmd_type, data):
         """Prints the command and data"""
@@ -90,6 +95,12 @@ class Communicator(object):
             )
         else:
             print "{} is not a recognized command type.".format(cmd_type)
+
+    def send_update(self, data):
+        """Sends an update"""
+        json_data = json.dumps(data)
+        print json_data
+        self.update_publisher.send_multipart(["scan_update", json_data])
 
     def shutdown(self):
         """Shuts down the app. Useful on exit"""

@@ -14,7 +14,7 @@ python scanner.py
 
 ```python
 """Creates a 3D scanner and perform a 3D scan"""
-with Sweep() as sweep:
+with Sweep('/dev/ttyUSB0') as sweep:
     # Create a default scan settings obj
     settings = scan_settings.ScanSettings()
     # Create a default base obj

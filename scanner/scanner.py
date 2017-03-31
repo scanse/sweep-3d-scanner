@@ -12,6 +12,7 @@ import atexit
 import threading
 import sys
 import argparse
+import json
 
 
 class Scanner(object):
@@ -23,12 +24,14 @@ class Scanner(object):
         exporter: the scan exporter
     """
 
+    # , updates=None):
     def __init__(self, device=None, base=None, settings=None, exporter=None):
         """Return a Scanner object
         :param base:  the scanner base
         :param device: the sweep device
         :param settings: the scan settings
         :param exporter: the scan exporter
+        :param updates: an optional communicator object that communicates updates
         """
         if device is None:
             self.shutdown("Please provide a device to scanner constructor.")
@@ -43,6 +46,8 @@ class Scanner(object):
         self.device = device
         self.settings = settings
         self.exporter = exporter
+        self.status_lock = threading.Lock()
+        self.status = None
 
     def setup_base(self):
         """Setup the base"""
@@ -51,8 +56,12 @@ class Scanner(object):
     def setup_device(self):
         """Setup the device"""
         print "Setup Device..."
-        reset_min_duration = 7
+
+        reset_min_duration = 7.0
         time_between_commands = 0.5
+
+        self.set_status(status="setup", msg="Resetting device.",
+                        duration=reset_min_duration)
 
         # Reset the device
         self.device.reset()
@@ -64,6 +73,15 @@ class Scanner(object):
         # Set the motor speed
         time.sleep(time_between_commands)
         adjust_start_time = time.time()
+
+        self.set_status(
+            status="setup", msg="Adjusting device settings.", duration=2.0)
+        # if self.updates is not None:
+        #     self.updates.send_update(
+        #         status="setup",
+        #         msg="Adjusting device settings.",
+        #         duration=2.0
+        #     )
         self.device.set_motor_speed(self.settings.get_motor_speed())
 
         # Set the sample rate
@@ -79,8 +97,10 @@ class Scanner(object):
         print '\tSample Rate: {} Hz'.format(self.device.get_sample_rate())
 
         # Allow at least 4 seconds for motor speed to adjust
-        sleep_duration = 4 - adjust_start_time
+        sleep_duration = 4.0 - adjust_start_time
         if sleep_duration > 0:
+            self.set_status(
+                status="setup", msg="Waiting for motor speed to stabilize.", duration=sleep_duration)
             time.sleep(sleep_duration)
 
     def setup(self):
@@ -105,7 +125,6 @@ class Scanner(object):
         """Performs a complete 3d scan
         :param angular_range: the angular range for the base to cover during the scan (default 180)
         """
-        print "Performing 3D scan"
         # Calcualte the # of evenly spaced 2D sweeps (base movements) required
         # to match resolutions
         num_sweeps = int(round(self.settings.get_resolution()
@@ -126,9 +145,13 @@ class Scanner(object):
         num_sweeps = math.floor(
             1.0 * self.settings.get_scan_range() / angle_between_sweeps)
 
+        self.set_status(status="scan", msg="Initiating scan...", duration=num_sweeps /
+                        self.settings.get_motor_speed(), remaining=num_sweeps / self.settings.get_motor_speed())
+
         # Start Scanning
         self.device.start_scanning()
 
+        print "Successfully started scanning..."
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(self.device.get_scans()):
@@ -158,11 +181,34 @@ class Scanner(object):
             # Move the base
             self.base.move_steps(num_stepper_steps_per_move)
 
+            self.set_status(status="scan", msg="Scan in Progress...", duration=num_sweeps /
+                            self.settings.get_motor_speed(), remaining=(num_sweeps - scan_count) / self.settings.get_motor_speed())
+
             # Collect the appropriate number of 2D scans
             if scan_count == num_sweeps:
                 break
         # Stop scanning
         self.device.stop_scanning()
+
+        self.set_status(status="complete", msg="Finished scan!")
+
+    def set_status(self, status, msg, duration=None, remaining=None):
+        """Sets the status of the scanner"""
+        data = {}
+        data['status'] = status
+        data['msg'] = msg
+        if duration is not None:
+            data['duration'] = duration
+        if remaining is not None:
+            data['remaining'] = remaining
+
+        with self.status_lock:
+            self.status = data
+
+    def get_status(self):
+        """Returns the status of the scanner"""
+        with self.status_lock:
+            return self.status
 
     def shutdown(self, msg=None):
         """Print message and shutdown"""
@@ -206,34 +252,32 @@ class Scanner(object):
 def main(arg_dict):
     """Creates a 3D scanner and gather a scan"""
     print "Main..."
+    # Create a scan settings obj
+    settings = scan_settings.ScanSettings(
+        # desired motor speed setting
+        int(arg_dict['motor_speed']),
+        # desired sample rate setting
+        int(arg_dict['sample_rate']),
+        # starting angle of deadzone
+        int(arg_dict['dead_zone']),
+        int(arg_dict['angular_range']),     # angular range of scan
+        # mount angle of device relative to horizontal
+        int(arg_dict['mount_angle'])
+    )
+    # settings = scan_settings.ScanSettings(
+    #     sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
+    #     sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
+    #     120,                            # starting angle of deadzone
+    #     180,                            # angular range of scan
+    #     -90)                            # mount angle of device relative to horizontal
+
+    # Create an exporter
+    exporter = scan_exporter.ScanExporter(
+        file_name=arg_dict['output']
+    )
     try:
         print "trying..."
         with Sweep('/dev/ttyUSB0') as sweep:
-            print "here"
-            # Create a scan settings obj
-            settings = scan_settings.ScanSettings(
-                # desired motor speed setting
-                int(arg_dict['motor_speed']),
-                # desired sample rate setting
-                int(arg_dict['sample_rate']),
-                # starting angle of deadzone
-                int(arg_dict['dead_zone']),
-                int(arg_dict['angular_range']),     # angular range of scan
-                # mount angle of device relative to horizontal
-                int(arg_dict['mount_angle'])
-            )
-
-            # settings = scan_settings.ScanSettings(
-            #     sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
-            #     sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
-            #     120,                            # starting angle of deadzone
-            #     180,                            # angular range of scan
-            #     -90)                            # mount angle of device relative to horizontal
-
-            # Create an exporter
-            exporter = scan_exporter.ScanExporter(
-                file_name=arg_dict['output']
-            )
             print "Creating Scanner..."
             # Create a scanner object
             scanner = Scanner(
@@ -250,27 +294,6 @@ def main(arg_dict):
             # Stop the scanner
             print "Setting the scanner to idle..."
             scanner.idle()
-    except KeyboardInterrupt:
-        print 'User terminated the program.'
-        print 'Please disconnect and reconnect sensor before running the script again.'
-        exit()
-    except:
-        print 'Error: {}'.format(sys.exc_info()[0])
-        print 'An error terminated the program.'
-        print 'Please disconnect and reconnect sensor before running the script again.'
-        exit()
-
-
-def perform_scan(scan_params):
-    """Performs a scan with the scan parameters"""
-    try:
-        print "Testing..."
-        print "From scanner... {} {} {} {}".format(
-            scan_params.motor_speed,
-            scan_params.sample_rate,
-            scan_params.angular_range,
-            scan_params.file_name
-        )
     except KeyboardInterrupt:
         print 'User terminated the program.'
         print 'Please disconnect and reconnect sensor before running the script again.'
@@ -299,7 +322,7 @@ if __name__ == '__main__':
     parser.add_argument('-dz', '--dead_zone',
                         help='Starting angle of deadzone',
                         default=120, required=False)
-    default_filename = "output_scans/Scan " + datetime.datetime.fromtimestamp(
+    default_filename = "Scan " + datetime.datetime.fromtimestamp(
         time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
     parser.add_argument('-o', '--output',
                         help='Filepath for the exported scan',
