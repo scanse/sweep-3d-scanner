@@ -27,8 +27,11 @@ class LimitSwitch(object):
 
         # Setup the switch
         GPIO.setmode(GPIO.BCM)
-        # Configure on provided pin as input with internal pull up resistor
-        GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # Configure on provided pin as...
+        # input with internal pull up resistor (for Normally Open switch)
+        # input with internal pull down resistor (for Normally Closed switch)
+        #GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         atexit.register(self.destroy)
 

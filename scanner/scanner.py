@@ -24,14 +24,12 @@ class Scanner(object):
         exporter: the scan exporter
     """
 
-    # , updates=None):
     def __init__(self, device=None, base=None, settings=None, exporter=None):
         """Return a Scanner object
         :param base:  the scanner base
         :param device: the sweep device
         :param settings: the scan settings
         :param exporter: the scan exporter
-        :param updates: an optional communicator object that communicates updates
         """
         if device is None:
             self.shutdown("Please provide a device to scanner constructor.")
@@ -58,9 +56,9 @@ class Scanner(object):
         print "Setup Device..."
 
         reset_min_duration = 7.0
-        time_between_commands = 0.5
 
-        self.set_status(status="setup", msg="Resetting device.",
+        self.set_status(status="setup",
+                        msg="Resetting device.",
                         duration=reset_min_duration)
 
         # Reset the device
@@ -70,38 +68,24 @@ class Scanner(object):
         print 'Resetting device, waiting {} seconds'.format(reset_min_duration)
         time.sleep(reset_min_duration)
 
-        # Set the motor speed
-        time.sleep(time_between_commands)
-        adjust_start_time = time.time()
-
-        self.set_status(
-            status="setup", msg="Adjusting device settings.", duration=2.0)
-        # if self.updates is not None:
-        #     self.updates.send_update(
-        #         status="setup",
-        #         msg="Adjusting device settings.",
-        #         duration=2.0
-        #     )
-        self.device.set_motor_speed(self.settings.get_motor_speed())
+        self.set_status(status="setup",
+                        msg="Adjusting device settings.",
+                        duration=7.0)
 
         # Set the sample rate
-        time.sleep(time_between_commands)
         self.device.set_sample_rate(self.settings.get_sample_rate())
-
-        # Confirm motor speed
-        time.sleep(time_between_commands)
-        print '\tMotor Speed: {} Hz'.format(self.device.get_motor_speed())
-
         # Confirm sample rate
-        time.sleep(time_between_commands)
-        print '\tSample Rate: {} Hz'.format(self.device.get_sample_rate())
+        print '\tSample Rate Setting: {} Hz'.format(self.device.get_sample_rate())
 
-        # Allow at least 4 seconds for motor speed to adjust
-        sleep_duration = 4.0 - adjust_start_time
-        if sleep_duration > 0:
-            self.set_status(
-                status="setup", msg="Waiting for motor speed to stabilize.", duration=sleep_duration)
-            time.sleep(sleep_duration)
+        # Set the motor speed
+        self.device.set_motor_speed(self.settings.get_motor_speed())
+        # Confirm motor speed
+        print '\tMotor Speed Setting: {} Hz'.format(self.device.get_motor_speed())
+
+        # Convey that the motor speed is adjusting
+        self.set_status(status="setup",
+                        msg="Waiting for calibration routine and motor speed to stabilize.",
+                        duration=6.0)
 
     def setup(self):
         """Setup the scanner according to the scan settings"""
@@ -145,8 +129,10 @@ class Scanner(object):
         num_sweeps = math.floor(
             1.0 * self.settings.get_scan_range() / angle_between_sweeps)
 
-        self.set_status(status="scan", msg="Initiating scan...", duration=num_sweeps /
-                        self.settings.get_motor_speed(), remaining=num_sweeps / self.settings.get_motor_speed())
+        self.set_status(status="scan",
+                        msg="Initiating scan...",
+                        duration=num_sweeps / self.settings.get_motor_speed(),
+                        remaining=num_sweeps / self.settings.get_motor_speed())
 
         # Start Scanning
         self.device.start_scanning()
@@ -181,8 +167,10 @@ class Scanner(object):
             # Move the base
             self.base.move_steps(num_stepper_steps_per_move)
 
-            self.set_status(status="scan", msg="Scan in Progress...", duration=num_sweeps /
-                            self.settings.get_motor_speed(), remaining=(num_sweeps - scan_count) / self.settings.get_motor_speed())
+            self.set_status(status="scan",
+                            msg="Scan in Progress...",
+                            duration=num_sweeps / self.settings.get_motor_speed(),
+                            remaining=(num_sweeps - scan_count) / self.settings.get_motor_speed())
 
             # Collect the appropriate number of 2D scans
             if scan_count == num_sweeps:
@@ -232,12 +220,6 @@ class Scanner(object):
         """Returns the Sweep device for this scanner"""
         return self.device
 
-    def set_device(self, device=None):
-        """Sets the Sweep device for this scanner to the provided Sweep"""
-        if device is None:
-            device = Sweep()
-        self.device = device
-
     def get_settings(self):
         """Returns the scan settings for this scanner"""
         return self.settings
@@ -254,13 +236,10 @@ def main(arg_dict):
     print "Main..."
     # Create a scan settings obj
     settings = scan_settings.ScanSettings(
-        # desired motor speed setting
-        int(arg_dict['motor_speed']),
-        # desired sample rate setting
-        int(arg_dict['sample_rate']),
-        # starting angle of deadzone
-        int(arg_dict['dead_zone']),
-        int(arg_dict['angular_range']),     # angular range of scan
+        int(arg_dict['motor_speed']),   # desired motor speed setting
+        int(arg_dict['sample_rate']),   # desired sample rate setting
+        int(arg_dict['dead_zone']),     # starting angle of deadzone
+        int(arg_dict['angular_range']),  # angular range of scan
         # mount angle of device relative to horizontal
         int(arg_dict['mount_angle'])
     )
@@ -272,9 +251,8 @@ def main(arg_dict):
     #     -90)                            # mount angle of device relative to horizontal
 
     # Create an exporter
-    exporter = scan_exporter.ScanExporter(
-        file_name=arg_dict['output']
-    )
+    exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
+
     try:
         print "trying..."
         with Sweep('/dev/ttyUSB0') as sweep:
@@ -309,24 +287,30 @@ if __name__ == '__main__':
         description='Creates a 3D scanner and performs a scan')
     parser.add_argument('-ms', '--motor_speed',
                         help='Motor Speed (integer from 1:10)',
-                        default=sweep_constants.MOTOR_SPEED_1_HZ, required=False)
+                        default=sweep_constants.MOTOR_SPEED_1_HZ,
+                        required=False)
     parser.add_argument('-sr', '--sample_rate',
                         help='Sample Rate(either 500, 750 or 1000)',
-                        default=sweep_constants.SAMPLE_RATE_500_HZ, required=False)
+                        default=sweep_constants.SAMPLE_RATE_500_HZ,
+                        required=False)
     parser.add_argument('-ar', '--angular_range',
                         help='Angular range of scan (integer from 1:180)',
-                        default=180, required=False)
+                        default=180,
+                        required=False)
     parser.add_argument('-ma', '--mount_angle',
                         help='Mount angle of device relative to horizontal',
-                        default=-90, required=False)
+                        default=-90,
+                        required=False)
     parser.add_argument('-dz', '--dead_zone',
                         help='Starting angle of deadzone',
-                        default=120, required=False)
+                        default=120,
+                        required=False)
     default_filename = "Scan " + datetime.datetime.fromtimestamp(
         time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
     parser.add_argument('-o', '--output',
                         help='Filepath for the exported scan',
-                        default=default_filename, required=False)
+                        default=default_filename,
+                        required=False)
 
     args = parser.parse_args()
     argsdict = vars(args)
