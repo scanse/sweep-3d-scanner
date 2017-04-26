@@ -10,7 +10,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 // backend variables
-const scan_file_dir = '../scanner/output_scans/';
+const scan_file_dir = './output_scans/';
 
 // Setup express
 var app = express();

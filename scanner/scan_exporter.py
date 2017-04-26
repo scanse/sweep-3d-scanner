@@ -36,9 +36,6 @@ class ScanExporter(object):
         #self.output_dir = os.path.split(file_name)[0]
         self.file_name = os.path.split(file_name)[1]
 
-        print self.output_dir
-        print self.file_name
-
         # Create an output directory for the scans if it doesn't exit
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -58,8 +55,8 @@ class ScanExporter(object):
         :param base_angle:
         :param CCW: True if base rotates CCW during scan
         """
-        print "Scan #{},\tcontains {} samples,\tangle: {} deg".format(
-            scan_index, len(scan.samples), base_angle)
+        # print "Scan #{},\tcontains {} samples,\tangle: {} deg".format(
+        #     scan_index, len(scan.samples), base_angle)
 
         converted_coords = scan_utils.transform_scan(
             scan, mount_angle, base_angle if CCW else -base_angle)
@@ -86,7 +83,7 @@ def main():
     """Creates a ScanExporter and exports a dummy scan"""
 
     exporter = ScanExporter()
-    print exporter.get_relative_file_path()
+    # print exporter.get_relative_file_path()
 
     for base_angle in range(0, 11):
         dummy_samples = [sweeppy.Sample(angle=30 * n, distance=1000, signal_strength=199)

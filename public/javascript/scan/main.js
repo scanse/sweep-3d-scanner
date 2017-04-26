@@ -83,7 +83,7 @@ function showScanProgress(params) {
 
 // Show the portion of the page that deals with scan failure
 function showScanFailure(msg) {
-    console.log(`Scan Failed:  ${msg}`);
+    console.log(`Failure:  ${msg}`);
     $("#div_ScanForm").hide();
     $("#div_ScanProgress").hide();
     $("#div_ScanResults").show();
@@ -96,7 +96,7 @@ function showScanFailure(msg) {
 
 // Show the portion of the page that deals with scan success
 function showScanSuccess(msg) {
-    console.log(`Scan Failed:  ${msg}`);
+    console.log(`Success:  ${msg}`);
     $("#div_ScanForm").hide();
     $("#div_ScanProgress").hide();
     $("#div_ScanResults").show();
@@ -186,7 +186,9 @@ function readSpecifiedScanOptions() {
     selectedKey = $('#select_SampleRate').find(":selected").val();
     options.sample_rate = SampleRateEnum.properties[SampleRateEnum[selectedKey]].sample_rate;
 
-    options.file_name = textInputHasValue("#input_FileName") ? $("#input_FileName").val() : `Scan ${Date.now()}`;
+    let d = new Date();
+    let alt_filename = "3D Scan - " + d.toDateString() + " " + d.toLocaleTimeString().replace(/:\s*/g, "-");
+    options.file_name = textInputHasValue("#input_FileName") ? $("#input_FileName").val() : alt_filename;
 
     return options;
 }

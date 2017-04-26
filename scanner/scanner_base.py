@@ -81,7 +81,7 @@ class ScannerBase(object):
             while not self.switch.check_for_press():
                 self.stepper.oneStep(Adafruit_MotorHAT.FORWARD,
                                      Adafruit_MotorHAT.SINGLE)
-                time.sleep(.03)
+                time.sleep(.1)
             self.switch.destroy()
 
         # print 'Hit limit switch...'
@@ -111,19 +111,19 @@ class ScannerBase(object):
         self.motor_hat.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
 
 
-def main():
-    """Creates a base and moves it 90 degrees"""
-    print "Creating base..."
+def test_demo():
+    """Performs a small test demo (reset, and move base 90 degrees)"""
     base = ScannerBase()
-
-    print "Moving base 90 degrees..."
+    base.reset()
     for _ in itertools.repeat(None, 90):
         base.move_degrees(1)
         time.sleep(.1)  # sleep for 100 ms
 
-    #base.reset()
 
-    print "Done!"
+def main():
+    """Creates a base and moves it 90 degrees"""
+    test_demo()
+
 
 if __name__ == '__main__':
     main()

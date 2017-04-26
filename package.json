@@ -11,8 +11,6 @@
   "dependencies": {
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
-    "jade": "^1.11.0",
-    "protobufjs": "^6.6.5",
-    "zeromq": "^4.2.0"
+    "jade": "^1.11.0"
   }
 }

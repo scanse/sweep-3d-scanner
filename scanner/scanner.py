@@ -9,7 +9,6 @@ import time
 import datetime
 import math
 import atexit
-import threading
 import sys
 import argparse
 import json
@@ -44,62 +43,76 @@ class Scanner(object):
         self.device = device
         self.settings = settings
         self.exporter = exporter
-        self.status_lock = threading.Lock()
-        self.status = None
 
     def setup_base(self):
         """Setup the base"""
+        output_json_message(
+            {'type': "update", 'status': "setup", 'msg': "Resetting base to home position."})
         self.base.reset()
 
     def setup_device(self):
         """Setup the device"""
-        print "Setup Device..."
+        reset_max_duration = 11.0
 
-        reset_min_duration = 7.0
+        output_json_message({'type': "update", 'status': "setup",
+                             'msg': "Resetting device.", 'duration': reset_max_duration})
 
-        self.set_status(status="setup",
-                        msg="Resetting device.",
-                        duration=reset_min_duration)
-
-        # Reset the device
-        self.device.reset()
+        try:
+            # Reset the device
+            self.device.reset()
+        except:
+            output_json_message({
+                'type': "error",
+                'status': "failed",
+                'msg': 'Error during reset: {}'.format(sys.exc_info()[0])
+            })
+            exit(2)
 
         # sleep for at least the minimum time required to reset the device
-        print 'Resetting device, waiting {} seconds'.format(reset_min_duration)
-        time.sleep(reset_min_duration)
+        time.sleep(reset_max_duration)
 
-        self.set_status(status="setup",
-                        msg="Adjusting device settings.",
-                        duration=7.0)
+        output_json_message(
+            {'type': "update", 'status': "setup", 'msg': "Adjusting device settings."})
 
-        # Set the sample rate
-        self.device.set_sample_rate(self.settings.get_sample_rate())
-        # Confirm sample rate
-        print '\tSample Rate Setting: {} Hz'.format(self.device.get_sample_rate())
+        try:
+            # Set the sample rate
+            self.device.set_sample_rate(self.settings.get_sample_rate())
+        except:
+            output_json_message({'type': "error", 'status': "failed",
+                                 'msg': 'Error while setting sample rate: {}'.format(sys.exc_info()[0])})
+            exit(2)
 
-        # Set the motor speed
-        self.device.set_motor_speed(self.settings.get_motor_speed())
-        # Confirm motor speed
-        print '\tMotor Speed Setting: {} Hz'.format(self.device.get_motor_speed())
-
-        # Convey that the motor speed is adjusting
-        self.set_status(status="setup",
-                        msg="Waiting for calibration routine and motor speed to stabilize.",
-                        duration=6.0)
+        try:
+            # Set the motor speed
+            self.device.set_motor_speed(self.settings.get_motor_speed())
+        except:
+            output_json_message({'type': "error", 'status': "failed",
+                                 'msg': 'Error while setting motor speed: {}'.format(sys.exc_info()[0])})
+            exit(2)
 
     def setup(self):
         """Setup the scanner according to the scan settings"""
-        # setup the device and base concurrently
-
-        # setup the base in a dedicated thread
-        thr = threading.Thread(target=self.setup_base, args=(), kwargs={})
-        thr.start()
-
-        # setup the device in the main thread
+        # setup the device, wait for it to calibrate
         self.setup_device()
 
-        # Wait for the base setup to complete, then join and return
-        thr.join()
+        # wait until the device is ready, so as not to disrupt the calibration
+        while True:
+            try:
+                if self.device.get_motor_ready() is True:
+                    break
+            except:
+                output_json_message({'type': "error", 'status': "failed",
+                                     'msg': 'Error while checking motor ready: {}'.format(sys.exc_info()[0])})
+                exit(2)
+
+            # Convey that the motor speed is still adjusting
+            output_json_message({'type': "update", 'status': "setup",
+                                 'msg': "Waiting for calibration routine and motor speed to stabilize."})
+
+            time.sleep(0.5)
+
+        # setup the base
+        self.setup_base()
 
     def idle(self):
         """Stops the device from spinning"""
@@ -129,15 +142,22 @@ class Scanner(object):
         num_sweeps = math.floor(
             1.0 * self.settings.get_scan_range() / angle_between_sweeps)
 
-        self.set_status(status="scan",
-                        msg="Initiating scan...",
-                        duration=num_sweeps / self.settings.get_motor_speed(),
-                        remaining=num_sweeps / self.settings.get_motor_speed())
+        output_json_message({
+            'type': "update",
+            'status': "scan",
+            'msg': "Initiating scan...",
+            'duration': num_sweeps / self.settings.get_motor_speed(),
+            'remaining': num_sweeps / self.settings.get_motor_speed()
+        })
 
-        # Start Scanning
-        self.device.start_scanning()
+        try:
+            # Start Scanning
+            self.device.start_scanning()
+        except:
+            output_json_message({'type': "error", 'status': "failed",
+                                 'msg': 'Error on start scanning: {}'.format(sys.exc_info()[0])})
+            exit(2)
 
-        print "Successfully started scanning..."
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(self.device.get_scans()):
@@ -167,43 +187,34 @@ class Scanner(object):
             # Move the base
             self.base.move_steps(num_stepper_steps_per_move)
 
-            self.set_status(status="scan",
-                            msg="Scan in Progress...",
-                            duration=num_sweeps / self.settings.get_motor_speed(),
-                            remaining=(num_sweeps - scan_count) / self.settings.get_motor_speed())
+            output_json_message({
+                'type': "update",
+                'status': "scan",
+                'msg': "Scan in Progress...",
+                'duration': num_sweeps / self.settings.get_motor_speed(),
+                'remaining': (num_sweeps - scan_count) / self.settings.get_motor_speed()
+            })
 
             # Collect the appropriate number of 2D scans
             if scan_count == num_sweeps:
                 break
-        # Stop scanning
-        self.device.stop_scanning()
 
-        self.set_status(status="complete", msg="Finished scan!")
+        try:
+            # Stop scanning
+            self.device.stop_scanning()
+        except:
+            output_json_message({'type': "error", 'status': "failed",
+                                 'msg': 'Error on stop scanning: {}'.format(sys.exc_info()[0])})
+            exit(2)
 
-    def set_status(self, status, msg, duration=None, remaining=None):
-        """Sets the status of the scanner"""
-        data = {}
-        data['status'] = status
-        data['msg'] = msg
-        if duration is not None:
-            data['duration'] = duration
-        if remaining is not None:
-            data['remaining'] = remaining
-
-        with self.status_lock:
-            self.status = data
-
-    def get_status(self):
-        """Returns the status of the scanner"""
-        with self.status_lock:
-            return self.status
+        output_json_message({
+            'type': "update",
+            'status': "complete",
+            'msg': "Finished scan!"
+        })
 
     def shutdown(self, msg=None):
         """Print message and shutdown"""
-        if msg is not None:
-            print '{}'.format(msg)
-
-        print 'Shutting down.'
         exit()
 
     def get_base(self):
@@ -231,9 +242,20 @@ class Scanner(object):
         self.settings = settings
 
 
+def output_message(message):
+    """Print the provided input & flush stdout so parent process registers the message"""
+    print message
+    sys.stdout.flush()
+
+
+def output_json_message(json_input):
+    """Print the provided json & flush stdout so parent process registers the message"""
+    serialized_json = json.dumps(json_input, separators=(',', ':'))
+    output_message(serialized_json)
+
+
 def main(arg_dict):
     """Creates a 3D scanner and gather a scan"""
-    print "Main..."
     # Create a scan settings obj
     settings = scan_settings.ScanSettings(
         int(arg_dict['motor_speed']),   # desired motor speed setting
@@ -243,44 +265,22 @@ def main(arg_dict):
         # mount angle of device relative to horizontal
         int(arg_dict['mount_angle'])
     )
-    # settings = scan_settings.ScanSettings(
-    #     sweep_constants.MOTOR_SPEED_1_HZ,       # desired motor speed setting
-    #     sweep_constants.SAMPLE_RATE_500_HZ,     # desired sample rate setting
-    #     120,                            # starting angle of deadzone
-    #     180,                            # angular range of scan
-    #     -90)                            # mount angle of device relative to horizontal
 
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
 
-    try:
-        print "trying..."
-        with Sweep('/dev/ttyUSB0') as sweep:
-            print "Creating Scanner..."
-            # Create a scanner object
-            scanner = Scanner(
-                device=sweep, settings=settings, exporter=exporter)
+    with Sweep('/dev/ttyUSB0') as sweep:
+        # Create a scanner object
+        scanner = Scanner(device=sweep, settings=settings, exporter=exporter)
 
-            # Setup the scanner
-            print "Running setup..."
-            scanner.setup()
+        # Setup the scanner
+        scanner.setup()
 
-            # Perform the scan
-            print "Performing scan..."
-            scanner.perform_scan()
+        # Perform the scan
+        scanner.perform_scan()
 
-            # Stop the scanner
-            print "Setting the scanner to idle..."
-            scanner.idle()
-    except KeyboardInterrupt:
-        print 'User terminated the program.'
-        print 'Please disconnect and reconnect sensor before running the script again.'
-        exit()
-    except:
-        print 'Error: {}'.format(sys.exc_info()[0])
-        print 'An error terminated the program.'
-        print 'Please disconnect and reconnect sensor before running the script again.'
-        exit()
+        # Stop the scanner
+        scanner.idle()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
