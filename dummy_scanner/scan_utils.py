@@ -1,5 +1,5 @@
 """Defines utility methods related to 3D scans"""
-import sweeppy
+import dummy_sweeppy
 import numpy as np
 import transformations as tf
 
@@ -61,9 +61,9 @@ def remove_angular_window(scan, low, high):
 def main():
     """Main method"""
 
-    dummy_samples = [sweeppy.Sample(angle=1000 * 30 * n, distance=10, signal_strength=199)
+    dummy_samples = [dummy_sweeppy.Sample(angle=1000 * 30 * n, distance=10, signal_strength=199)
                      for n in range(6)]
-    dummy_scan = sweeppy.Scan(samples=dummy_samples)
+    dummy_scan = dummy_sweeppy.Scan(samples=dummy_samples)
 
     print len(dummy_scan.samples)
     print dummy_scan.samples

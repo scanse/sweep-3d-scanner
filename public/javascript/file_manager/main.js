@@ -6,7 +6,7 @@ $(document).ready(function () {
     init();
 });
 
-
+// initialize page elements
 function init() {
     initButtons();
     refreshFiles();

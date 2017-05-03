@@ -1,0 +1,16 @@
+extends layout
+
+block content
+  div.container
+    h1 Component Testing:
+
+    a.btn.btn-primary(href="/" role="button") Return Home
+    br
+    
+    div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
+    div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
+    div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
+
+block scripts
+    script(src='/javascript/utils.js')
+    script(src='/javascript/component_testing/main.js')

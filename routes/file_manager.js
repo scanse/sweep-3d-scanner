@@ -1,6 +1,6 @@
 /**
  * File Manager Route:
- * This contains all the route and backend logic for the file manager page.
+ * Contains all the route and backend logic for the file manager page.
  */
 
 // Module Includes
@@ -11,6 +11,10 @@ const bodyParser = require('body-parser');
 
 // backend variables
 const scan_file_dir = './output_scans/';
+// create directory if it doesn't yet exist
+if (!fs.existsSync(scan_file_dir)) {
+    fs.mkdirSync(scan_file_dir);
+}
 
 // Setup express
 var app = express();

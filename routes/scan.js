@@ -1,6 +1,6 @@
 /**
  * Scan Route:
- * This contains all the route and backend logic for the scan page.
+ * Contains all the route and backend logic for the scan page.
  */
 
 // Module Includes
@@ -12,9 +12,10 @@ const spawn = require('child_process').spawn;
 
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
 const pythonExecutable = "python";
-// Python script paths
-const PY_scan_script = "./scanner/scanner.py";
-
+// Directory for python scanner scripts
+const scanner_script_dir = GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "./dummy_scanner" : "./scanner";
+// Python script path
+const PY_scan_script = path.join(scanner_script_dir, "scanner.py");
 // Backend variables
 var currentScannerStatus = null;
 

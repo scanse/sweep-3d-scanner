@@ -64,7 +64,7 @@ base = ScannerBase()
 exporter = ScanExporter()
 
 for base_angle in range(0, 11):
-    dummy_samples = [sweeppy.Sample(angle=30 * n, distance=1000, signal_strength=199)
+    dummy_samples = [sweeppy.Sample(angle=1000 * 30 * n, distance=1000, signal_strength=199)
                         for n in range(11)]
     dummy_scan = sweeppy.Scan(samples=dummy_samples)
 

@@ -1,5 +1,5 @@
 """Defines a 3D scanner"""
-from sweeppy import Sweep
+import dummy_sweeppy
 import sweep_constants
 import scan_settings
 import scanner_base
@@ -18,7 +18,6 @@ class Scanner(object):
     """The 3d scanner.
     Attributes:
         base: the rotating base
-        device: the sweep scanning LiDAR
         settings: the scan settings
         exporter: the scan exporter
     """
@@ -30,8 +29,6 @@ class Scanner(object):
         :param settings: the scan settings
         :param exporter: the scan exporter
         """
-        if device is None:
-            self.shutdown("Please provide a device to scanner constructor.")
         if base is None:
             base = scanner_base.ScannerBase()
         if settings is None:
@@ -40,7 +37,6 @@ class Scanner(object):
             exporter = scan_exporter.ScanExporter()
 
         self.base = base
-        self.device = device
         self.settings = settings
         self.exporter = exporter
 
@@ -57,16 +53,8 @@ class Scanner(object):
         output_json_message({'type': "update", 'status': "setup",
                              'msg': "Resetting device.", 'duration': reset_max_duration})
 
-        try:
-            # Reset the device
-            self.device.reset()
-        except:
-            output_json_message({
-                'type': "error",
-                'status': "failed",
-                'msg': 'Error during reset: {}'.format(sys.exc_info()[0])
-            })
-            exit(2)
+        # Reset the device
+        # dummy does nothing
 
         # sleep for at least the minimum time required to reset the device
         time.sleep(reset_max_duration)
@@ -74,21 +62,13 @@ class Scanner(object):
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Adjusting device settings."})
 
-        try:
-            # Set the sample rate
-            self.device.set_sample_rate(self.settings.get_sample_rate())
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting sample rate: {}'.format(sys.exc_info()[0])})
-            exit(2)
+        # Set the sample rate
+        # Dummy does nothing
+        time.sleep(0.05)
 
-        try:
-            # Set the motor speed
-            self.device.set_motor_speed(self.settings.get_motor_speed())
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting motor speed: {}'.format(sys.exc_info()[0])})
-            exit(2)
+        # Set the motor speed
+        # Dummy does nothing
+        time.sleep(0.05)
 
     def setup(self):
         """Setup the scanner according to the scan settings"""
@@ -96,15 +76,8 @@ class Scanner(object):
         self.setup_device()
 
         # wait until the device is ready, so as not to disrupt the calibration
-        while True:
-            try:
-                if self.device.get_motor_ready() is True:
-                    break
-            except:
-                output_json_message({'type': "error", 'status': "failed",
-                                     'msg': 'Error while checking motor ready: {}'.format(sys.exc_info()[0])})
-                exit(2)
-
+        # dummy waits 8 seconds (16 x 0.5 seconds)
+        for x in range(0, 16):
             # Convey that the motor speed is still adjusting
             output_json_message({'type': "update", 'status': "setup",
                                  'msg': "Waiting for calibration routine and motor speed to stabilize."})
@@ -116,7 +89,8 @@ class Scanner(object):
 
     def idle(self):
         """Stops the device from spinning"""
-        self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
+        # dummy does nothing
+        time.sleep(0.1)
 
     def perform_scan(self):
         """Performs a complete 3d scan
@@ -150,17 +124,13 @@ class Scanner(object):
             'remaining': num_sweeps / self.settings.get_motor_speed()
         })
 
-        try:
-            # Start Scanning
-            self.device.start_scanning()
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on start scanning: {}'.format(sys.exc_info()[0])})
-            exit(2)
+        # Start Scanning
+        # dummy waits 6 seconds
+        time.sleep(6.0)
 
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
-        for scan_count, scan in enumerate(self.device.get_scans()):
+        for scan_count, scan in enumerate(dummy_sweeppy.get_scans()):
             # remove readings from unreliable distances
             scan_utils.remove_distance_extremes(
                 scan, self.settings.get_min_range_val(), self.settings.get_max_range_val())
@@ -169,6 +139,8 @@ class Scanner(object):
             scan_utils.remove_angular_window(
                 scan, self.settings.get_deadzone(), 360 - self.settings.get_deadzone())
 
+            # Catch scans that are too big, and don't include them (indicates
+            # problem reading sync byte)
             if len(scan.samples) > self.settings.get_max_samples_per_scan():
                 continue
 
@@ -199,13 +171,9 @@ class Scanner(object):
             if scan_count == num_sweeps:
                 break
 
-        try:
-            # Stop scanning
-            self.device.stop_scanning()
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on stop scanning: {}'.format(sys.exc_info()[0])})
-            exit(2)
+        # Stop scanning
+        # dummy does nothing
+        time.sleep(0.05)
 
         output_json_message({
             'type': "update",
@@ -265,18 +233,17 @@ def main(arg_dict):
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
 
-    with Sweep('/dev/ttyUSB0') as sweep:
-        # Create a scanner object
-        scanner = Scanner(device=sweep, settings=settings, exporter=exporter)
+    # Create a scanner object
+    scanner = Scanner(settings=settings, exporter=exporter)
 
-        # Setup the scanner
-        scanner.setup()
+    # Setup the scanner
+    scanner.setup()
 
-        # Perform the scan
-        scanner.perform_scan()
+    # Perform the scan
+    scanner.perform_scan()
 
-        # Stop the scanner
-        scanner.idle()
+    # Stop the scanner
+    scanner.idle()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

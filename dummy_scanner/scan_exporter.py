@@ -1,11 +1,10 @@
 """Defines entites relevant to the exportation of scans"""
-import sweeppy
+import dummy_sweeppy
 import time
 import datetime
 import csv
 import os.path
 import scan_utils
-import numpy as np
 
 
 class ScanExporter(object):
@@ -81,12 +80,12 @@ def main():
     exporter = ScanExporter()
 
     index = 0
-    for base_angle in range(0, 11):
-        dummy_samples = [sweeppy.Sample(angle=1000 * 30 * n, distance=1000, signal_strength=199)
-                         for n in range(11)]
-        dummy_scan = sweeppy.Scan(samples=dummy_samples)
+    for base_angle in range(0, 71):
+        dummy_samples = [dummy_sweeppy.Sample(angle=1000 * 5 * n, distance=1000, signal_strength=199)
+                         for n in range(71)]
+        dummy_scan = dummy_sweeppy.Scan(samples=dummy_samples)
 
-        exporter.export_2D_scan(dummy_scan, index, 90, base_angle * 30, False)
+        exporter.export_2D_scan(dummy_scan, index, 90, base_angle * 5, False)
         index = index + 1
 
 if __name__ == '__main__':

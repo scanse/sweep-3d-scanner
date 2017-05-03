@@ -3,8 +3,13 @@
  */
 
 $(document).ready(function () {
-    initScanForm();
+    init();
 });
+
+// initialize page elements
+function init() {
+    initScanForm();
+}
 
 // Initialize the scan form, by populating all the input fields with appropriate options
 function initScanForm() {
