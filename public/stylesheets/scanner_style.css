@@ -1,0 +1,52 @@
+/* Homepage Styles
+-------------------------------------------------- */
+.homebtn{
+  width:100%;
+  margin:11px 0;
+
+  padding:11px;
+  padding-left:16px;
+  padding-top:22px;
+  font-size:24px;
+  text-align: left;
+}
+.homebtn p{
+  display: inline;
+  top:-5px;
+  position: relative;;
+}
+.homebtn .glyphicon{
+  font-size:28px;
+  padding-right: 16px;
+}
+
+/* File Manager Styles
+-------------------------------------------------- */
+.form-inline .btn:first-child, .form-inline select{
+  margin-right:11px;
+}
+
+/* Scan Manager Styles
+-------------------------------------------------- */
+
+.progress{
+height:50px;
+font-weight: bold;
+}
+.progress-bar-striped{
+  background-size: 50px 50px
+}
+.progress-bar {
+  padding:15px;
+}
+
+
+/* fixed header styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  padding-top: 100px;
+}

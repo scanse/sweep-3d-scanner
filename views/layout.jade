@@ -5,13 +5,30 @@ html
     script(src='/lib/jquery/jquery-2.2.4.min.js')
     link(rel='stylesheet', href='/stylesheets/bootstrap-3.3.7-dist/css/bootstrap.min.css')
     link(rel='stylesheet', href='/stylesheets/bootstrap-3.3.7-dist/css/bootstrap-theme.min.css')
+    link(rel='stylesheet', href='/stylesheets/scanner_style.css')
     script(src='/stylesheets/bootstrap-3.3.7-dist/js/bootstrap.min.js')
   body
-    block content
 
-    footer.footer
+    nav.navbar.navbar-default.navbar-fixed-top
       div.container
-        span.text-muted &copy; Copyright 2017 by 
-          a(href="http://scanse.io/") Scanse, LLC
-    
+        div.navbar-header
+          div.navbar-brand
+            Sweep 3D Scanner v 0.1
+        ul.nav.navbar-nav
+          li
+            a(href="/" role="button")
+              span.glyphicon.glyphicon-home
+        div.collapse.navbar-collapse
+          ul.nav.navbar-nav.navbar-right
+            li
+              a(href="http://scanse.io/" target="_blank") Community Forum
+            li
+              a(href="https://github.com/scanse/sweep-3d-scanner" target="_blank") Github Repo
+
+    div.container
+      div.col-md-8.col-md-push-2
+        block content
+
+
+
     block scripts

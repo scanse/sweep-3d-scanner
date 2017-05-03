@@ -1,22 +1,24 @@
 extends layout
 
 block content
-  div.container
-    h1 File Manager
+  h1 File Manager
+  p File manager quick help.
+  hr
 
-    a.btn.btn-primary(href="/" role="button") Return Home
-    br
-    
-    form
-        div.form-group
-            label File:
-            select(id="select_FileName")
-            button.btn.btn-primary(id="btn_DownloadFile", type="button" name="submit" value="download") Download File!
-            button.btn.btn-danger(id="btn_DeleteFile", type="button" name="submit" value="delete") Delete File!
+  label Select File
+  form.form-inline
+      div.form-group
+          select.form-control.input-lg(id="select_FileName")
+      div.form-group
+          button.btn-lg.btn.btn-primary(id="btn_DownloadFile", type="button" name="submit" value="download")
+            span.glyphicon.glyphicon-download
+          button.btn-lg.btn.btn-danger(id="btn_DeleteFile", type="button" name="submit" value="delete")
+            span.glyphicon.glyphicon-trash
+  br
+  div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
+  div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
+  div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
 
-    div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
-    div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
-    div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
 
 block scripts
     script(src='/javascript/utils.js')

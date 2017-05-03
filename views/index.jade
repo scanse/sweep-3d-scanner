@@ -1,11 +1,18 @@
 extends layout
 
 block content
-  div.container
-    h1 Welcome to the 3d-Scanner Homepage!
-    br
-    div.btn-group-vertical
-      a.btn.btn-primary(href="/scan" role="button") Perform Scan
-      a.btn.btn-primary(href="/file_manager" role="button") File Manager
-      a.btn.btn-primary(href="/device" role="button") Device Controls
-      a.btn.btn-primary(href="/component_testing" role="button") Component Testing
+  h1 Home
+  p Choose and option to get started.
+  hr
+  a.btn.btn-primary.homebtn(href="/scan" role="button")
+    span.glyphicon.glyphicon-record
+    p Perform Scan
+  a.btn.btn-primary.homebtn(href="/file_manager" role="button")
+    span.glyphicon.glyphicon-folder-open
+    p File Manager
+  a.btn.btn-default.homebtn(href="/device" role="button")
+    span.glyphicon.glyphicon-tasks
+    p Device Controls
+  a.btn.btn-default.homebtn(href="/component_testing" role="button")
+    span.glyphicon.glyphicon-dashboard
+    p Component Testing

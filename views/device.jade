@@ -1,15 +1,13 @@
 extends layout
 
 block content
-  div.container
-    h1 Device Controls:
-
-    a.btn.btn-primary(href="/" role="button") Return Home
-    br
-    
-    div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
-    div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
-    div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
+  h1 Device Controls
+  p Quick instructions
+  hr
+  p the controls go here
+  div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
+  div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
+  div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
 
 block scripts
     script(src='/javascript/utils.js')
