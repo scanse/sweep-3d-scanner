@@ -78,6 +78,7 @@ Then, use a web-browser on same computer (such as google chrome) to navigate to 
 - python code provides updates about the scan progress using a simple message format encoded as stringified JSON, which the backend JS can easily decode and feed right off to the client side JS at the client’s request
 
 ## directory structure
+- `dummy_scanner/`: contains dummy versions of the scripts from the `scanner/` directory
 - `output_scans/`: where .csv output scan files are stored
 - `public/`: contains static files (express will look here)
   - `javascript/`: client-side javascript (includes sub-directory for every page)
@@ -90,4 +91,7 @@ Then, use a web-browser on same computer (such as google chrome) to navigate to 
 
 
 ## Alternatives:
-Other branches provide some experimentation with more powerful and expandable solutions. See the outdated [zmq-ipc](https://github.com/scanse/sweep-3d-scanner/tree/zmq-ipc) branch for a WIP using distributed zeromq patterns with a message schema like protobuff.
+Other branches provide some experimentation with more powerful and expandable solutions. See the outdated [zmq-ipc](https://github.com/scanse/sweep-3d-scanner/tree/zmq-ipc) branch for a WIP using distributed zeromq patterns with a message schema like protobuff. This could extend the capabilities beyond IPC, to messaging external applications.
+
+## Contributing:
+...
