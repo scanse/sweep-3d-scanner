@@ -10,14 +10,12 @@ var app = express();
 let route_INDEX = require('./routes/index.js');
 let route_SCAN = require('./routes/scan.js');
 let route_FILE_MANAGER = require('./routes/file_manager.js');
-let route_DEVICE = require('./routes/device.js');
 let route_COMPONENT_TESTING = require('./routes/component_testing.js');
 
 // Handle each page within a separate route file (imported at top)
 app.use('/', route_INDEX);
 app.use('/scan', route_SCAN);
 app.use('/file_manager', route_FILE_MANAGER);
-app.use('/device', route_DEVICE);
 app.use('/component_testing', route_COMPONENT_TESTING);
 
 var server;

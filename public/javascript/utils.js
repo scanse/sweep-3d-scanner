@@ -1,4 +1,4 @@
-const MotorSpeedEnum = {
+var MotorSpeedEnum = {
     MS_1_HZ: 1,
     MS_2_HZ: 2,
     MS_3_HZ: 3,
@@ -10,7 +10,7 @@ const MotorSpeedEnum = {
     }
 };
 
-const SampleRateEnum = {
+var SampleRateEnum = {
     SR_500_HZ: 1,
     SR_750_HZ: 2,
     SR_1000_HZ: 3,
@@ -22,7 +22,7 @@ const SampleRateEnum = {
     }
 };
 
-const ScanTypeEnum = {
+var ScanTypeEnum = {
     FULL_360_DEG: 1,
     HALF_180_DEG: 2,
     PARTIAL_90_DEG: 3,
@@ -36,9 +36,18 @@ const ScanTypeEnum = {
     }
 };
 
+var TestTypeEnum = {
+    SCANNER_LIMIT_SWITCH: 1,
+    SCANNER_BASE: 2,
+
+    properties: {
+        1: { value: 1, name: "SCANNER_LIMIT_SWITCH", displayName: "Test Limit Switch", bIsDefault: true, },
+        2: { value: 2, name: "SCANNER_BASE", displayName: "Move base 90 degrees", bIsDefault: false }
+    }
+};
 
 //Returns the default value of any enum with a properties list containing a default parameter
-let getEnumDefault = (theEnum) => {
+var getEnumDefault = (theEnum) => {
     for (let key in theEnum) {
         //don't consider the properties key
         if (key === 'properties')
@@ -50,11 +59,16 @@ let getEnumDefault = (theEnum) => {
     return null;
 };
 
-function textInputHasValue(elem) {
+var textInputHasValue = (elem) => {
     return $(elem).filter(function () { return $(this).val(); }).length > 0;
 }
 
 // Returns the nearest integer percentage between 0:100
-function calcPercentage(remaining, total) {
+var calcPercentage = (remaining, total) => {
     return Math.round(100 * ((total - remaining) / total));
+}
+
+// Function to convert an Uint8Array to a string
+var uint8arrayToString = (data) => {
+    return String.fromCharCode.apply(null, data);
 }

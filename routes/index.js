@@ -38,5 +38,34 @@ router.route('/')
         console.log('received post');
     })
 
+// request a reboot
+router.route('/request_reboot')
+    .get(function (req, res, next) {
+        reboot();
+    })
+
+// request a shutdown
+router.route('/request_shutdown')
+    .get(function (req, res, next) {
+        shutdown();
+    })
+
+// reboot the raspberry pi
+function reboot() {
+    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
+        //TODO: add execution of reboot command
+    }
+    console.log("Restarting Raspberry Pi...");
+    process.exit();
+}
+
+// shutdown the raspberry pi
+function shutdown() {
+    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
+        //TODO: add execution of shutdown command
+    }
+    console.log("Shutting down Raspberry Pi...");
+    process.exit();
+}
 
 module.exports = app;

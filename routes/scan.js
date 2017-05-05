@@ -10,12 +10,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const spawn = require('child_process').spawn;
 
+// Util File Include (defines enums + helper methods)
+eval.apply(global, [fs.readFileSync('./public/javascript/utils.js').toString()]);
+
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
-const pythonExecutable = "python";
+const PYTHON_EXECUTABLE = "python";
 // Directory for python scanner scripts
-const scanner_script_dir = GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "./dummy_scanner" : "./scanner";
+const SCANNER_SCRIPT_DIR = GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "./dummy_scanner" : "./scanner";
 // Python script path
-const PY_scan_script = path.join(scanner_script_dir, "scanner.py");
+const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
 // Backend variables
 var currentScannerStatus = null;
 
@@ -55,26 +58,26 @@ router.route('/request_update')
 // submit a scan request
 router.route('/submit_scan_request')
     .get(function (req, res, next) {
-        var data = req.query;
+        let data = req.query; // data carries the scan params
         performScan(data);
 
         res.send({
             bSumittedScanRequest: true,
-            //errorMsg: "testing error msg...",
             scanParams: data //FIXME: currently just sending the same data back
         });
     })
 
 
 // Start the scanner script
+//TODO: convert over to using the settings enums from the utils file
 function performScan(params) {
     currentScannerStatus = null;
 
     // strip away any directory or extension, then add .csv extension explicitly
     let filename = path.parse(params.file_name).name + '.csv';
 
-    const scriptExecution = spawn(pythonExecutable, [
-        PY_scan_script,
+    const scriptExecution = spawn(PYTHON_EXECUTABLE, [
+        PY_SCAN_SCRIPT,
         `--motor_speed=${params.motor_speed}`,
         `--sample_rate=${params.sample_rate}`,
         `--angular_range=${params.angular_range}`,

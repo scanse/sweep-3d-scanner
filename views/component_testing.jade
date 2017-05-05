@@ -1,10 +1,15 @@
 extends layout
 
 block content
-  h1 Component Testing:
-  p Quick instructions
-  hr
-  p dropdown and text box
+  div(id="div_TestForm")
+      h1 Component Testing
+      p Quick instructions
+      hr
+      form
+        div.form-group
+              label(for="select_TestType") Test Type:
+              select.form-control.input-lg(id="select_TestType", name="input_TestType")
+        button.btn.btn-primary.btn-lg(id="btn_PerformTest", type="button") Perform Test
   
   div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
   div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")

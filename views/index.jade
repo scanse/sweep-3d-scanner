@@ -10,9 +10,12 @@ block content
   a.btn.btn-primary.homebtn(href="/file_manager" role="button")
     span.glyphicon.glyphicon-folder-open
     p File Manager
-  a.btn.btn-default.homebtn(href="/device" role="button")
-    span.glyphicon.glyphicon-tasks
-    p Device Controls
   a.btn.btn-default.homebtn(href="/component_testing" role="button")
-    span.glyphicon.glyphicon-dashboard
+    span.glyphicon.glyphicon-tasks
     p Component Testing
+  a.btn.btn-warning.homebtn(href="/request_reboot" role="button")
+    span.glyphicon.glyphicon-refresh
+    p Restart Raspberry Pi
+  a.btn.btn-danger.homebtn(href="/request_shutdown" role="button")
+    span.glyphicon.glyphicon-off
+    p Shutdown Raspberry Pi
