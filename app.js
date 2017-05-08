@@ -31,12 +31,12 @@ if (GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
     });
 }
 else {
-    server = app.listen(8080, 'localhost', function () {
+    server = app.listen(8080, function () {
         var host = server.address().address;
         var port = server.address().port;
 
         console.log('Scanner app listening at http://%s:%s', host, port);
-        console.log('Use a browser on another device to navigate to http://%s:%s', host, port);
+        console.log('Use a browser on another device to navigate to http://172.24.1.1:%s', port);
     });
 }
 
