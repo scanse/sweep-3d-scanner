@@ -69,38 +69,31 @@ class ScannerBase(object):
 
     def reset(self):
         """Resets the base angle."""
-
-        # print 'Returning home quickly...'
-
-        # check that the switch is not already pressed (ie: edge case where a
-        # rising edge event won't occur)
+        # check that the switch is not already pressed
+        # (edge case where a rising edge event won't occur)
         if not self.switch.is_pressed():
-            # Move quickly backward to home angle, until hitting the limit
-            # switch.
+            # Move quickly back to home angle, until hitting limit switch.
             self.switch.setup_event_detect()
             while not self.switch.check_for_press():
-                self.stepper.oneStep(Adafruit_MotorHAT.FORWARD,
-                                     Adafruit_MotorHAT.SINGLE)
-                time.sleep(.1)
+                self.stepper.oneStep(
+                    Adafruit_MotorHAT.FORWARD,	Adafruit_MotorHAT.SINGLE)
+                time.sleep(.2)
             self.switch.destroy()
 
-        # print 'Hit limit switch...'
-
         # Move forward off the switch
-        self.move_degrees(12)
-        time.sleep(1.5)
+        for _ in itertools.repeat(None, 12):
+            self.move_degrees(1)
+            time.sleep(.2)  # sleep for 200 ms
 
-        # print 'Returning home slowly...'
-
-        # check that the switch is not already pressed (ie: edge case where a
-        # rising edge event won't occur)
+        # check that the switch is not already pressed
+        # (edge case where a rising edge event won't occur)
         if not self.switch.is_pressed():
             self.switch.setup_event_detect()
-            # Move slowly backward to home angle, until just hitting the limit
-            # switch
+            # Move slowly back to home angle, until just hitting limit switch
             while not self.switch.check_for_press():
-                self.move_degrees(-1)
-                time.sleep(.2)
+                self.stepper.oneStep(
+                    Adafruit_MotorHAT.FORWARD,	Adafruit_MotorHAT.SINGLE)
+                time.sleep(.3)
             self.switch.destroy()
 
     def turn_off_motors(self):
