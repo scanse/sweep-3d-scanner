@@ -1908,7 +1908,8 @@ def _import_module(name, package=None, warn=True, prefix='_py_', ignore='_'):
             module = import_module('.' + name, package=package)
     except ImportError:
         if warn:
-            warnings.warn("failed to import module %s" % name)
+            if name is not "_transformations":
+                warnings.warn("failed to import module %s" % name)
     else:
         for attr in dir(module):
             if ignore and attr.startswith(ignore):
