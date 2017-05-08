@@ -267,6 +267,7 @@ def main(arg_dict):
 
     with Sweep('/dev/ttyUSB0') as sweep:
         # Create a scanner object
+        time.sleep(1.0)
         scanner = Scanner(device=sweep, settings=settings, exporter=exporter)
 
         # Setup the scanner
@@ -276,6 +277,7 @@ def main(arg_dict):
         scanner.perform_scan()
 
         # Stop the scanner
+        time.sleep(1.0)
         scanner.idle()
 
 if __name__ == '__main__':
