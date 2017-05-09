@@ -49,7 +49,14 @@ custom_params = ScanSettings(
 `ScannerBase` class defines the rotating base of the scanner.
 
 ```python
+# create a base
 base = ScannerBase()
+# reset base to home position
+base.reset()
+# move base 90 degrees
+for _ in itertools.repeat(None, 90):
+    base.move_degrees(1)
+    time.sleep(.1)  # sleep for 100 ms
 ```
 
 ## scan_utils
@@ -63,12 +70,14 @@ base = ScannerBase()
 ```python
 exporter = ScanExporter()
 
+index = 0
 for base_angle in range(0, 11):
     dummy_samples = [sweeppy.Sample(angle=1000 * 30 * n, distance=1000, signal_strength=199)
                         for n in range(11)]
     dummy_scan = sweeppy.Scan(samples=dummy_samples)
 
-    exporter.export_2D_scan(dummy_scan, 0, 90, base_angle * 30)
+    exporter.export_2D_scan(dummy_scan, index, 90, base_angle * 30, False)
+    index = index + 1
 ```
 
 ## sweep_constants
