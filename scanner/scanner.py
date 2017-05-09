@@ -12,6 +12,7 @@ import atexit
 import sys
 import argparse
 import json
+import traceback
 
 
 class Scanner(object):
@@ -64,7 +65,7 @@ class Scanner(object):
             output_json_message({
                 'type': "error",
                 'status': "failed",
-                'msg': 'Error during reset: {}'.format(sys.exc_info()[0])
+                'msg': 'Error during reset: {}'.format(traceback.format_exc())
             })
             exit(2)
 
@@ -79,15 +80,16 @@ class Scanner(object):
             self.device.set_sample_rate(self.settings.get_sample_rate())
         except:
             output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting sample rate: {}'.format(sys.exc_info()[0])})
+                                 'msg': 'Error while setting sample rate: {}'.format(traceback.format_exc())})
             exit(2)
 
         try:
             # Set the motor speed
             self.device.set_motor_speed(self.settings.get_motor_speed())
         except:
+            print sys.exc_info()[0]
             output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting motor speed: {}'.format(sys.exc_info()[0])})
+                                 'msg': 'Error while setting motor speed: {}'.format(traceback.format_exc())})
             exit(2)
 
     def setup(self):
@@ -101,8 +103,9 @@ class Scanner(object):
                 if self.device.get_motor_ready() is True:
                     break
             except:
-                output_json_message({'type': "error", 'status': "failed",
-                                     'msg': 'Error while checking motor ready: {}'.format(sys.exc_info()[0])})
+                output_json_message(
+                    {'type': "error", 'status': "failed",
+                     'msg': 'Error while checking motor ready: {}'.format(traceback.format_exc())})
                 exit(2)
 
             # Convey that the motor speed is still adjusting
@@ -155,7 +158,7 @@ class Scanner(object):
             self.device.start_scanning()
         except:
             output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on start scanning: {}'.format(sys.exc_info()[0])})
+                                 'msg': 'Error on start scanning: {}'.format(traceback.format_exc())})
             exit(2)
 
         # get_scans is coroutine-based generator lazily returning scans ad
@@ -204,7 +207,7 @@ class Scanner(object):
             self.device.stop_scanning()
         except:
             output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on stop scanning: {}'.format(sys.exc_info()[0])})
+                                 'msg': 'Error on stop scanning: {}'.format(traceback.format_exc())})
             exit(2)
 
         output_json_message({

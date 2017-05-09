@@ -20,6 +20,7 @@ const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUs
 // Python script paths
 const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
 const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
+const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
 
 
 // Setup express
@@ -78,12 +79,17 @@ function performTest(params) {
             console.log("Running scanner base test");
             pyScriptToExecute = PY_SCANNER_BASE_SCRIPT;
             break;
+        case TestTypeEnum.SWEEP_TEST:
+            console.log("Running sweep test");
+            pyScriptToExecute = PY_SWEEP_TEST_SCRIPT;
+            break;
         default:
             console.log("Unknown test");
+            return;
             break;
     }
-    return;
-    const scriptExecution = spawn(pythonExecutable, [pyScriptToExecute]);
+
+    const scriptExecution = spawn(PYTHON_EXECUTABLE, [pyScriptToExecute]);
 
     // Handle normal output
     scriptExecution.stdout.on('data', (data) => {

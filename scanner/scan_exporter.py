@@ -17,7 +17,8 @@ class ScanExporter(object):
         writer: the csv file writer
     """
     # Output directory for the exported file
-    output_dir = 'output_scans'
+    output_dir = os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), '../output_scans')
     # Field names for the CSV
     field_names = ['SCAN_INDEX', 'X', 'Y', 'Z',
                    'SIGNAL_STRENGTH']
