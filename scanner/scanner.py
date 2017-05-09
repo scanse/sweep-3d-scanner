@@ -287,21 +287,25 @@ def main(arg_dict):
 
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
+    try:
+        with Sweep('/dev/ttyUSB0') as sweep:
+            # Create a scanner object
+            time.sleep(1.0)
+            scanner = Scanner(
+                device=sweep, settings=settings, exporter=exporter)
 
-    with Sweep('/dev/ttyUSB0') as sweep:
-        # Create a scanner object
-        time.sleep(1.0)
-        scanner = Scanner(device=sweep, settings=settings, exporter=exporter)
+            # Setup the scanner
+            scanner.setup()
 
-        # Setup the scanner
-        scanner.setup()
+            # Perform the scan
+            scanner.perform_scan()
 
-        # Perform the scan
-        scanner.perform_scan()
-
-        # Stop the scanner
-        time.sleep(1.0)
-        scanner.idle()
+            # Stop the scanner
+            time.sleep(1.0)
+            scanner.idle()
+    except:
+        output_json_message({'type': "error", 'status': "failed",
+                             'msg': 'Error: {}'.format(traceback.format_exc())})
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
