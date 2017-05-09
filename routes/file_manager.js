@@ -10,7 +10,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 // backend variables
-const scan_file_dir = './output_scans/';
+const scan_file_dir = path.join(__dirname, "../output_scans/");
 // create directory if it doesn't yet exist
 if (!fs.existsSync(scan_file_dir)) {
     fs.mkdirSync(scan_file_dir);

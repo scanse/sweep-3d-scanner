@@ -11,17 +11,16 @@ const bodyParser = require('body-parser');
 const spawn = require('child_process').spawn;
 
 // Util File Include (defines enums + helper methods)
-eval.apply(global, [fs.readFileSync('./public/javascript/utils.js').toString()]);
+eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/utils.js')).toString()]);
 
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
 const PYTHON_EXECUTABLE = "python";
 // Directory for python scanner scripts
-const SCANNER_SCRIPT_DIR = GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "./dummy_scanner" : "./scanner";
+const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "../dummy_scanner" : "../scanner"));
 // Python script path
 const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
 // Backend variables
 var currentScannerStatus = null;
-
 
 // Setup express
 var app = express();
