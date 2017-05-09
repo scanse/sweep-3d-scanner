@@ -8,7 +8,6 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 
-
 var app = express();
 //gives your app the ability to parse JSON
 app.use(bodyParser.json());
@@ -52,19 +51,27 @@ router.route('/request_shutdown')
 
 // reboot the raspberry pi
 function reboot() {
-    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
-        //TODO: add execution of reboot command
-    }
     console.log("Restarting Raspberry Pi...");
+    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
+        const exec = require('child_process').exec;
+        exec('sudo /sbin/reboot', (error, stdout, stderr) => {
+            if (error)
+                console.error(`exec error: ${error}`);
+        });
+    }
     process.exit();
 }
 
 // shutdown the raspberry pi
 function shutdown() {
-    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
-        //TODO: add execution of shutdown command
-    }
     console.log("Shutting down Raspberry Pi...");
+    if (!GLOBAL_APPLICATION_VARIABLE_bUseDummy) {
+        const exec = require('child_process').exec;
+        exec('sudo /sbin/halt', (error, stdout, stderr) => {
+            if (error)
+                console.error(`exec error: ${error}`);
+        });
+    }
     process.exit();
 }
 
