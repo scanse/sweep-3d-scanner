@@ -1,12 +1,12 @@
 var MotorSpeedEnum = {
     MS_1_HZ: 1,
     MS_2_HZ: 2,
-    MS_3_HZ: 3,
+    //MS_3_HZ: 3,
 
     properties: {
         1: { value: 1, name: "MS_1_HZ", displayName: "1 Hz", bIsDefault: true, motor_speed: 1 },
-        2: { value: 2, name: "MS_2_HZ", displayName: "2 Hz", bIsDefault: false, motor_speed: 2 },
-        3: { value: 3, name: "MS_3_HZ", displayName: "3 Hz", bIsDefault: false, motor_speed: 3 }
+        2: { value: 2, name: "MS_2_HZ", displayName: "2 Hz", bIsDefault: false, motor_speed: 2 }
+        //3: { value: 3, name: "MS_3_HZ", displayName: "3 Hz", bIsDefault: false, motor_speed: 3 }
     }
 };
 
