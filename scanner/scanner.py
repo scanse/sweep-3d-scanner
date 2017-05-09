@@ -13,6 +13,8 @@ import sys
 import argparse
 import json
 import traceback
+import threading
+import thread
 
 
 class Scanner(object):
@@ -44,6 +46,7 @@ class Scanner(object):
         self.device = device
         self.settings = settings
         self.exporter = exporter
+        self.received_scan = False
 
     def setup_base(self):
         """Setup the base"""
@@ -121,6 +124,15 @@ class Scanner(object):
         """Stops the device from spinning"""
         self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
 
+    def check_get_scan_timeout(self):
+        """Checks if we have received a scan from getScan... if not, exit"""
+        if not self.received_scan:
+            output_json_message({'type': "error", 'status': "failed",
+                                 'msg': 'getScan() never returned... aborting'})
+
+            # send KeyboardInterrupt to kill the main thread
+            thread.interrupt_main()
+
     def perform_scan(self):
         """Performs a complete 3d scan
         :param angular_range: the angular range for the base to cover during the scan (default 180)
@@ -161,9 +173,17 @@ class Scanner(object):
                                  'msg': 'Error on start scanning: {}'.format(traceback.format_exc())})
             exit(2)
 
+        # put a 3 second timeout on the get_scans() method in case it gets hung
+        # up
+        time_out_thread = threading.Timer(3, self.check_get_scan_timeout)
+        time_out_thread.start()
+
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(self.device.get_scans()):
+            # note that a scan was received (used to avoid the timeout)
+            self.received_scan = True
+
             # remove readings from unreliable distances
             scan_utils.remove_distance_extremes(
                 scan, self.settings.get_min_range_val(), self.settings.get_max_range_val())
