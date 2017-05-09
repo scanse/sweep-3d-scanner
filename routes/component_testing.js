@@ -21,7 +21,7 @@ const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUs
 const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
 const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
 const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
-
+const PY_RELEASE_MOTOR_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "release_motors.py");
 
 // Setup express
 var app = express();
@@ -82,6 +82,10 @@ function performTest(params) {
         case TestTypeEnum.SWEEP_TEST:
             console.log("Running sweep test");
             pyScriptToExecute = PY_SWEEP_TEST_SCRIPT;
+            break;
+        case TestTypeEnum.RELEASE_MOTOR:
+            console.log("Running release motor");
+            pyScriptToExecute = PY_RELEASE_MOTOR_SCRIPT;
             break;
         default:
             console.log("Unknown test");

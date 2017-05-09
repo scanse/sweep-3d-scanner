@@ -40,10 +40,12 @@ var TestTypeEnum = {
     SCANNER_LIMIT_SWITCH: 1,
     SCANNER_BASE: 2,
     SWEEP_TEST: 3,
+    RELEASE_MOTOR: 4,
     properties: {
         1: { value: 1, name: "SCANNER_LIMIT_SWITCH", displayName: "Test limit switch", bIsDefault: true, },
         2: { value: 2, name: "SCANNER_BASE", displayName: "Move base 90 degrees", bIsDefault: false },
-        3: { value: 3, name: "SWEEP_TEST", displayName: "Test the sweep device", bIsDefault: false }
+        3: { value: 3, name: "SWEEP_TEST", displayName: "Test the sweep device", bIsDefault: false },
+        4: { value: 3, name: "RELEASE_MOTOR", displayName: "Release stepper motor", bIsDefault: false }
     }
 };
 
