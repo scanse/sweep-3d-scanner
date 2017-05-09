@@ -1,4 +1,5 @@
 # 3D Scanner Node Web Application 
+The sweep-3d-scanner is a community project.
 
 ## Dependencies
 - nodejs 
@@ -94,4 +95,16 @@ Then, use a web-browser on same computer (such as google chrome) to navigate to 
 Other branches provide some experimentation with more powerful and expandable solutions. See the outdated [zmq-ipc](https://github.com/scanse/sweep-3d-scanner/tree/zmq-ipc) branch for a WIP using distributed zeromq patterns with a message schema like protobuff. This could extend the capabilities beyond IPC, to messaging external applications.
 
 ## Contributing:
-...
+The sweep-3d-scanner is a community project. We got the ball rolling, but things will evolve and improve through community contribution. There is a lot of room for improvmenet, and submitting a pull request is easy! 
+
+Don't hesitate to experiment and modify the code. The application could really benefit from contributions related to:
+- front-end design
+- webserver
+- routing
+- python scripting
+- stepper motor control
+- networking and communication
+- deployment (docker)
+- etc...
+
+To make the process of contributing more efficient, please review the [contribution guidelines](.github/CONTRIBUTING.md).
