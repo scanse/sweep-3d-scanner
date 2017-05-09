@@ -33,6 +33,9 @@ class LimitSwitch(object):
         #GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
+        # make sure there are no prior events ?
+        self.unsubscribe()
+
         atexit.register(self.destroy)
 
     def announce_push(self, channel):
