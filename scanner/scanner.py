@@ -12,7 +12,6 @@ import atexit
 import sys
 import argparse
 import json
-import traceback
 import threading
 import thread
 
@@ -61,16 +60,8 @@ class Scanner(object):
         output_json_message({'type': "update", 'status': "setup",
                              'msg': "Resetting device.", 'duration': reset_max_duration})
 
-        try:
-            # Reset the device
-            self.device.reset()
-        except:
-            output_json_message({
-                'type': "error",
-                'status': "failed",
-                'msg': 'Error during reset: {}'.format(traceback.format_exc())
-            })
-            exit(2)
+        # Reset the device
+        self.device.reset()
 
         # sleep for at least the minimum time required to reset the device
         time.sleep(reset_max_duration)
@@ -78,22 +69,11 @@ class Scanner(object):
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Adjusting device settings."})
 
-        try:
-            # Set the sample rate
-            self.device.set_sample_rate(self.settings.get_sample_rate())
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting sample rate: {}'.format(traceback.format_exc())})
-            exit(2)
+        # Set the sample rate
+        self.device.set_sample_rate(self.settings.get_sample_rate())
 
-        try:
-            # Set the motor speed
-            self.device.set_motor_speed(self.settings.get_motor_speed())
-        except:
-            print sys.exc_info()[0]
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error while setting motor speed: {}'.format(traceback.format_exc())})
-            exit(2)
+        # Set the motor speed
+        self.device.set_motor_speed(self.settings.get_motor_speed())
 
     def setup(self):
         """Setup the scanner according to the scan settings"""
@@ -102,14 +82,8 @@ class Scanner(object):
 
         # wait until the device is ready, so as not to disrupt the calibration
         while True:
-            try:
-                if self.device.get_motor_ready() is True:
-                    break
-            except:
-                output_json_message(
-                    {'type': "error", 'status': "failed",
-                     'msg': 'Error while checking motor ready: {}'.format(traceback.format_exc())})
-                exit(2)
+            if self.device.get_motor_ready() is True:
+                break
 
             # Convey that the motor speed is still adjusting
             output_json_message({'type': "update", 'status': "setup",
@@ -127,11 +101,12 @@ class Scanner(object):
     def check_get_scan_timeout(self):
         """Checks if we have received a scan from getScan... if not, exit"""
         if not self.received_scan:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'getScan() never returned... aborting'})
-
-            # send KeyboardInterrupt to kill the main thread
-            thread.interrupt_main()
+            self.base.turn_off_motors()
+            raise ValueError("getScan() never returned... aborting")
+            # Should work out a better solution to shutdown.
+            # Signaling with KeyboardInterrupt doesn't seem to work and process still hangs
+            # Currently the workaround is that the node app will kill this
+            # process if it receives an error
 
     def perform_scan(self):
         """Performs a complete 3d scan
@@ -165,13 +140,8 @@ class Scanner(object):
             'remaining': num_sweeps / self.settings.get_motor_speed()
         })
 
-        try:
-            # Start Scanning
-            self.device.start_scanning()
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on start scanning: {}'.format(traceback.format_exc())})
-            exit(2)
+        # Start Scanning
+        self.device.start_scanning()
 
         # put a 3 second timeout on the get_scans() method in case it gets hung
         # up
@@ -222,13 +192,8 @@ class Scanner(object):
             if scan_count == num_sweeps:
                 break
 
-        try:
-            # Stop scanning
-            self.device.stop_scanning()
-        except:
-            output_json_message({'type': "error", 'status': "failed",
-                                 'msg': 'Error on stop scanning: {}'.format(traceback.format_exc())})
-            exit(2)
+        # Stop scanning
+        self.device.stop_scanning()
 
         output_json_message({
             'type': "update",
@@ -287,25 +252,21 @@ def main(arg_dict):
 
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
-    try:
-        with Sweep('/dev/ttyUSB0') as sweep:
-            # Create a scanner object
-            time.sleep(1.0)
-            scanner = Scanner(
-                device=sweep, settings=settings, exporter=exporter)
+    with Sweep('/dev/ttyUSB0') as sweep:
+        # Create a scanner object
+        time.sleep(1.0)
+        scanner = Scanner(
+            device=sweep, settings=settings, exporter=exporter)
 
-            # Setup the scanner
-            scanner.setup()
+        # Setup the scanner
+        scanner.setup()
 
-            # Perform the scan
-            scanner.perform_scan()
+        # Perform the scan
+        scanner.perform_scan()
 
-            # Stop the scanner
-            time.sleep(1.0)
-            scanner.idle()
-    except:
-        output_json_message({'type': "error", 'status': "failed",
-                             'msg': 'Error: {}'.format(traceback.format_exc())})
+        # Stop the scanner
+        time.sleep(1.0)
+        scanner.idle()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

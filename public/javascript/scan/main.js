@@ -95,7 +95,7 @@ function showScanFailure(msg) {
 
     $("#alert_Success").html('');
     $("#alert_Success").hide();
-    $("#alert_Failure").html(msg);
+    $("#alert_Failure").html(`<pre>${msg}</pre>`);
     $("#alert_Failure").show();
 }
 

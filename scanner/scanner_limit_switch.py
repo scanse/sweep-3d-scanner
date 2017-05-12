@@ -84,12 +84,7 @@ def main():
 
     print 'Try pressing the button... You have 10 seconds.'
 
-    def my_print_function(channel):
-        """Prints test"""
-        print 'test from channel {}'.format(channel)
-
     switch = LimitSwitch(17)
-    # switch.subscribe_to_press(my_print_function)
 
     # run for 10 seconds
     for _ in itertools.repeat(None, 100):

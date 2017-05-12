@@ -9,6 +9,7 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const spawn = require('child_process').spawn;
+const exec = require('child_process').exec;
 
 // Util File Include (defines enums + helper methods)
 eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/utils.js')).toString()]);
@@ -87,29 +88,58 @@ function performScan(params) {
     scriptExecution.stdout.on('data', (data) => {
         let jsonObj = JSON.parse(uint8arrayToString(data));
         console.log(jsonObj);
+
+        // Store the update as the current status
         currentScannerStatus = jsonObj;
+
+        // If the update indicates a failure, terminate the child process in case it is hanging
+        if (currentScannerStatus.status === 'failed') {
+            let processId = scriptExecution.pid;
+            setTimeout(() => {
+                killChildProcess(processId);
+            }, 500);
+        }
     });
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
-        // As said before, convert the Uint8Array to a readable string.
+        // note the status as a failure, packaged with the error message
+        currentScannerStatus = {
+            'type': "update",
+            'status': "failed",
+            'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
+        }
+        // kill the child process in case it is hanging
+        let processId = scriptExecution.pid;
+        setTimeout(() => {
+            killChildProcess(processId);
+        }, 500);
         console.log(uint8arrayToString(data));
     });
 
     // Handle exit
     scriptExecution.on('exit', (code) => {
         console.log("Process quit with code : " + code);
+        // Kill the process on abnormal exit, in case it is hanging
+        if (Number(code) !== 0)
+            killChildProcess(scriptExecution.pid);
     });
 
     // Handle close
     scriptExecution.on('close', (code) => {
         console.log("Process closed with code : " + code);
+        // Kill the process on abnormal close, in case it is hanging
+        if (Number(code) !== 0)
+            killChildProcess(scriptExecution.pid);
     });
 }
 
-// Function to convert an Uint8Array to a string
-function uint8arrayToString(data) {
-    return String.fromCharCode.apply(null, data);
+// kills a process by its process id
+function killChildProcess(pid) {
+    exec(`kill ${pid}`, (error, stdout, stderr) => {
+        if (error)
+            console.error(`Error killing child process: ${error}`);
+    });
 }
 
 module.exports = app;
