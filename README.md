@@ -1,5 +1,5 @@
 # 3D Scanner Node Web Application 
-The sweep-3d-scanner is an open source community project. The goal is to make an inexpensive, portable and easy to use 3D scanner.
+The sweep-3d-scanner is an open source community project. The goal is to make an inexpensive, portable and easy to use 3D scanner. Currently the software is still under heavy development, and should not be considered stable. Users are encouraged to experiment with the software, report bugs and contribute fixes!
 
 ![homepage](https://s3.amazonaws.com/scanse/3D-Scanner/docs/imgs/webapp/homepage_1.PNG)
 
