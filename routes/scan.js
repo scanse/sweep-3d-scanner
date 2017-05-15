@@ -9,7 +9,6 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const spawn = require('child_process').spawn;
-const exec = require('child_process').exec;
 
 // Util File Include (defines enums + helper methods)
 eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/utils.js')).toString()]);
@@ -96,7 +95,7 @@ function performScan(params) {
         if (currentScannerStatus.status === 'failed') {
             let processId = scriptExecution.pid;
             setTimeout(() => {
-                killChildProcess(processId);
+                scriptExecution.kill();
             }, 500);
         }
     });
@@ -110,9 +109,8 @@ function performScan(params) {
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
         }
         // kill the child process in case it is hanging
-        let processId = scriptExecution.pid;
         setTimeout(() => {
-            killChildProcess(processId);
+            scriptExecution.kill();
         }, 500);
         console.log(uint8arrayToString(data));
     });
@@ -122,7 +120,7 @@ function performScan(params) {
         console.log("Process quit with code : " + code);
         // Kill the process on abnormal exit, in case it is hanging
         if (Number(code) !== 0)
-            killChildProcess(scriptExecution.pid);
+            scriptExecution.kill();
     });
 
     // Handle close
@@ -130,15 +128,7 @@ function performScan(params) {
         console.log("Process closed with code : " + code);
         // Kill the process on abnormal close, in case it is hanging
         if (Number(code) !== 0)
-            killChildProcess(scriptExecution.pid);
-    });
-}
-
-// kills a process by its process id
-function killChildProcess(pid) {
-    exec(`kill ${pid}`, (error, stdout, stderr) => {
-        if (error)
-            console.error(`Error killing child process: ${error}`);
+            scriptExecution.kill();
     });
 }
 
