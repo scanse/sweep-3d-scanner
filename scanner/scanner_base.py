@@ -30,6 +30,8 @@ class ScannerBase(object):
         self.motor_hat = Adafruit_MotorHAT()
         self.stepper = self.motor_hat.getStepper(
             stepper_steps_per_rev, stepper_motor_port)
+        # default to 1 RPM (only used during reset)
+        self.stepper.setSpeed(1)
 
         # note the limit switch
         self.switch = switch
@@ -72,28 +74,28 @@ class ScannerBase(object):
         # check that the switch is not already pressed
         # (edge case where a rising edge event won't occur)
         if not self.switch.is_pressed():
-            # Move quickly back to home angle, until hitting limit switch.
+            # Move back to home angle, until hitting limit switch.
             self.switch.setup_event_detect()
             while not self.switch.check_for_press():
-                self.stepper.oneStep(
-                    Adafruit_MotorHAT.FORWARD,	Adafruit_MotorHAT.SINGLE)
-                time.sleep(.2)
+                # use DOUBLE mode for more torque
+                self.stepper.step(2, Adafruit_MotorHAT.FORWARD,
+                                  Adafruit_MotorHAT.DOUBLE)
             self.switch.destroy()
 
         # Move forward off the switch
         for _ in itertools.repeat(None, 12):
-            self.move_degrees(1)
-            time.sleep(.2)  # sleep for 200 ms
+            self.stepper.step(1, Adafruit_MotorHAT.BACKWARD,
+                              Adafruit_MotorHAT.DOUBLE)
 
         # check that the switch is not already pressed
         # (edge case where a rising edge event won't occur)
         if not self.switch.is_pressed():
+            # Move back to home angle, until just hitting limit switch
             self.switch.setup_event_detect()
-            # Move slowly back to home angle, until just hitting limit switch
             while not self.switch.check_for_press():
-                self.stepper.oneStep(
-                    Adafruit_MotorHAT.FORWARD,	Adafruit_MotorHAT.SINGLE)
-                time.sleep(.3)
+                # use DOUBLE mode for more torque
+                self.stepper.step(1, Adafruit_MotorHAT.FORWARD,
+                                  Adafruit_MotorHAT.DOUBLE)
             self.switch.destroy()
 
     def turn_off_motors(self):
