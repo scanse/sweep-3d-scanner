@@ -10,7 +10,7 @@ The sweep-3d-scanner is an open source community project. The goal is to make an
 
 ## Contributing:
 -------------------
-The sweep-3d-scanner is a community project. We got the ball rolling, but things will evolve and improve through community contribution. There is a lot of room for improvmenet, and submitting a pull request is easy! 
+The sweep-3d-scanner is a community project. We got the ball rolling, but things will evolve and improve through community contribution. There is a lot of room for improvement, and submitting a pull request is easy! 
 
 Don't hesitate to experiment and modify the code. The application could really benefit from contributions related to:
 - front-end design
