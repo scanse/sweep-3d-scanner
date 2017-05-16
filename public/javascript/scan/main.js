@@ -124,7 +124,7 @@ function requestUpdate() {
     }).done(function (data) {
         if (typeof data === 'undefined' || !data || data === null) {
             setTimeout(requestUpdate, 300);
-            return
+            return;
         }
 
         switch (data.status) {

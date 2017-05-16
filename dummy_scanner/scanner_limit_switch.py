@@ -1,6 +1,9 @@
 """Tests the limit switch"""
 import time
 import itertools
+import sys
+import json
+from random import randint
 
 
 class LimitSwitch(object):
@@ -41,8 +44,8 @@ class LimitSwitch(object):
 
     def is_pressed(self):
         """Checks if the switch is currently pressed"""
-        # dummy returns False
-        return False
+        # dummy simulates a press 20% of the time
+        return randint(0, 10) < 2
 
     def check_for_press(self):
         """Returns true if an event was detected"""
@@ -54,9 +57,44 @@ class LimitSwitch(object):
         # dummy does nothing
 
 
+def output_message(message):
+    """Print the provided input & flush stdout so parent process registers the message"""
+    print message
+    sys.stdout.flush()
+
+
+def output_json_message(json_input):
+    """Print the provided json & flush stdout so parent process registers the message"""
+    serialized_json = json.dumps(json_input, separators=(',', ':'))
+    output_message(serialized_json)
+
+
+def test_demo():
+    """Performs a small test demo (prints message when switch is pressed)"""
+    output_json_message({'type': "update", 'status': "instruction",
+                         'msg': "Try pressing the limit switch... You have 10 seconds."})
+    # pause... give time for user to read directions
+    time.sleep(.5)
+
+    switch = LimitSwitch(17)
+
+    # run for 10 seconds
+    for _ in itertools.repeat(None, 100):
+        time.sleep(.1)
+        if switch.is_pressed():
+            output_json_message(
+                {'type': "update", 'status': "progress", 'msg': "Pressed!"})
+
+    # pause to avoid accidentally flushing the previous message contents
+    time.sleep(0.1)
+
+    output_json_message(
+        {'type': "update", 'status': "complete", 'msg': "Finished test!"})
+
+
 def main():
     """Creates a limit switch and prints a message when it is pressed"""
-    print "Dummy has no main test"
+    test_demo()
 
 if __name__ == '__main__':
     main()

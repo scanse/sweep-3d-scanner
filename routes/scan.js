@@ -93,7 +93,6 @@ function performScan(params) {
 
         // If the update indicates a failure, terminate the child process in case it is hanging
         if (currentScannerStatus.status === 'failed') {
-            let processId = scriptExecution.pid;
             setTimeout(() => {
                 scriptExecution.kill();
             }, 500);

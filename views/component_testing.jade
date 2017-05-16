@@ -1,6 +1,14 @@
 extends layout
 
 block content
+  div(id="div_TestProgress", style="display: none;")
+    h1 Testing
+    h4
+      span(id="span_TestStatus")
+    hr
+    div.alert.alert-info(id="alert_Info", role="alert")
+      pre(id="pre_TestDetails")
+
   div(id="div_TestForm")
       h1 Component Testing
       p Select a script to run.
@@ -14,6 +22,10 @@ block content
   div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
   div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")
   div.alert.alert-danger(id="alert_Failure", role="alert", style="display: none;")
+
+  a.btn.btn-primary(id="btn_ReloadPage", href="/component_testing", role="button", style="margin-left:4px; display: none;")
+          span.glyphicon.glyphicon-refresh(style="margin-right:6px")
+          span Run Another Test
 
 block scripts
     script(src='/javascript/utils.js')

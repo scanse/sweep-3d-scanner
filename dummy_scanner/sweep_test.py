@@ -9,6 +9,8 @@ def main():
     output_json_message(
         {'type': "update", 'status': "setup", 'msg': "Testing motor ready."})
 
+    time.sleep(0.1)
+
     output_json_message(
         {'type': "update", 'status': "setup", 'msg': "Adjusting sample rate."})
 
@@ -22,6 +24,8 @@ def main():
     output_json_message(
         {'type': "update", 'status': "setup", 'msg': "Testing motor ready."})
 
+    time.sleep(0.1)
+
     output_json_message(
         {'type': "update", 'status': "setup", 'msg': "Starting data acquisition."})
 
@@ -33,7 +37,7 @@ def main():
     time.sleep(0.1)
 
     output_json_message(
-        {'type': "update", 'status': "success", 'msg': "Done."})
+        {'type': "update", 'status': "complete", 'msg': "Finished Test!"})
 
 
 def output_message(message):

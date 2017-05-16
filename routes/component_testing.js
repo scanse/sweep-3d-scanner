@@ -23,6 +23,10 @@ const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
 const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
 const PY_RELEASE_MOTOR_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "release_motors.py");
 
+// Backend variables
+var currentTestStatus = null;
+var currentTestStatusUpdateCounter = 0;
+
 // Setup express
 var app = express();
 //gives your app the ability to parse JSON
@@ -51,7 +55,10 @@ router.route('/')
 // request an update
 router.route('/request_update')
     .get(function (req, res, next) {
-        let statusObj = currentScannerStatus;
+        let statusObj = currentTestStatus;
+        if (!statusObj)
+            statusObj = {};
+        statusObj.counter = currentTestStatusUpdateCounter;
         res.send(statusObj);
     })
 
@@ -69,6 +76,9 @@ router.route('/submit_test_request')
 
 // Start the appropriate scanner script
 function performTest(params) {
+    currentTestStatus = null;
+    currentTestStatusUpdateCounter = 0;
+
     let pyScriptToExecute = null;
     switch (Number(params.test)) {
         case TestTypeEnum.SCANNER_LIMIT_SWITCH:
@@ -88,6 +98,11 @@ function performTest(params) {
             pyScriptToExecute = PY_RELEASE_MOTOR_SCRIPT;
             break;
         default:
+            currentTestStatus = {
+                'type': "update",
+                'status': "failed",
+                'msg': `Failed to determine test type, or test type does not exist.`
+            }
             console.log("Unknown test");
             return;
             break;
@@ -98,24 +113,50 @@ function performTest(params) {
     // Handle normal output
     scriptExecution.stdout.on('data', (data) => {
         console.log(uint8arrayToString(data));
-        // let jsonObj = JSON.parse(uint8arrayToString(data));
-        // console.log(jsonObj);
+        let jsonObj = JSON.parse(uint8arrayToString(data));
+        console.log(jsonObj);
+
+        // Store the update as the current status
+        currentTestStatus = jsonObj;
+        currentTestStatusUpdateCounter++;
+
+        // If the update indicates a failure, terminate the child process in case it is hanging
+        if (currentTestStatus.status === 'failed') {
+            setTimeout(() => {
+                scriptExecution.kill();
+            }, 500);
+        }
     });
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
-        // As said before, convert the Uint8Array to a readable string.
+        // note the status as a failure, packaged with the error message
+        currentTestStatus = {
+            'type': "update",
+            'status': "failed",
+            'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
+        }
+        // kill the child process in case it is hanging
+        setTimeout(() => {
+            scriptExecution.kill();
+        }, 500);
         console.log(uint8arrayToString(data));
     });
 
     // Handle exit
     scriptExecution.on('exit', (code) => {
         console.log("Process quit with code : " + code);
+        // Kill the process on abnormal exit, in case it is hanging
+        if (Number(code) !== 0)
+            scriptExecution.kill();
     });
 
     // Handle close
     scriptExecution.on('close', (code) => {
         console.log("Process closed with code : " + code);
+        // Kill the process on abnormal close, in case it is hanging
+        if (Number(code) !== 0)
+            scriptExecution.kill();
     });
 }
 

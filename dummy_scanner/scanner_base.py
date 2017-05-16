@@ -1,6 +1,8 @@
 """Defines the rotating base of the scanner"""
 import time
 import itertools
+import sys
+import json
 
 
 class ScannerBase(object):
@@ -45,13 +47,42 @@ class ScannerBase(object):
         time.sleep(1.5)
 
 
+def output_message(message):
+    """Print the provided input & flush stdout so parent process registers the message"""
+    print message
+    sys.stdout.flush()
+
+
+def output_json_message(json_input):
+    """Print the provided json & flush stdout so parent process registers the message"""
+    serialized_json = json.dumps(json_input, separators=(',', ':'))
+    output_message(serialized_json)
+
+
 def test_demo():
     """Performs a small test demo (reset, and move base 90 degrees)"""
+    output_json_message(
+        {'type': "update", 'status': "setup", 'msg': "Creating base!"})
+
     base = ScannerBase()
+
+    # pause to avoid accidentally flushing the previous message contents
+    time.sleep(0.1)
+
+    output_json_message(
+        {'type': "update", 'status': "progress", 'msg': "Resetting base..."})
+
     base.reset()
+
+    output_json_message(
+        {'type': "update", 'status': "progress", 'msg': "Moving base 90 degrees..."})
+
     for _ in itertools.repeat(None, 90):
         base.move_degrees(1)
         time.sleep(.1)  # sleep for 100 ms
+
+    output_json_message(
+        {'type': "update", 'status': "complete", 'msg': "Finished test!"})
 
 
 def main():

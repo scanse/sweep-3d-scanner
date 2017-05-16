@@ -3,6 +3,8 @@ import RPi.GPIO as GPIO
 import time
 import atexit
 import itertools
+import sys
+import json
 
 
 class LimitSwitch(object):
@@ -79,10 +81,24 @@ class LimitSwitch(object):
         self.unsubscribe()
 
 
-def main():
-    """Creates a limit switch and prints a message when it is pressed"""
+def output_message(message):
+    """Print the provided input & flush stdout so parent process registers the message"""
+    print message
+    sys.stdout.flush()
 
-    print 'Try pressing the button... You have 10 seconds.'
+
+def output_json_message(json_input):
+    """Print the provided json & flush stdout so parent process registers the message"""
+    serialized_json = json.dumps(json_input, separators=(',', ':'))
+    output_message(serialized_json)
+
+
+def test_demo():
+    """Performs a small test demo (prints message when switch is pressed)"""
+    output_json_message({'type': "update", 'status': "instruction",
+                         'msg': "Try pressing the limit switch... You have 10 seconds."})
+    # pause... give time for user to read directions
+    time.sleep(.5)
 
     switch = LimitSwitch(17)
 
@@ -90,9 +106,19 @@ def main():
     for _ in itertools.repeat(None, 100):
         time.sleep(.1)
         if switch.is_pressed():
-            print 'Pressed'
+            output_json_message(
+                {'type': "update", 'status': "progress", 'msg': "Pressed!"})
 
-    print "Done!"
+    # pause to avoid accidentally flushing the previous message contents
+    time.sleep(0.1)
+
+    output_json_message(
+        {'type': "update", 'status': "complete", 'msg': "Finished test!"})
+
+
+def main():
+    """Creates a limit switch and prints a message when it is pressed"""
+    test_demo()
 
 if __name__ == '__main__':
     main()

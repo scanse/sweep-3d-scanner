@@ -48,7 +48,7 @@ def main():
         sweep.stop_scanning()
 
         output_json_message(
-            {'type': "update", 'status': "success", 'msg': "Done."})
+            {'type': "update", 'status': "complete", 'msg': "Finished Test!"})
 
 
 def output_message(message):
