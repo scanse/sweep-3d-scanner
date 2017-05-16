@@ -85,7 +85,14 @@ function performScan(params) {
 
     // Handle normal output
     scriptExecution.stdout.on('data', (data) => {
-        let jsonObj = JSON.parse(uint8arrayToString(data));
+        let jsonObj = null;
+        try {
+            jsonObj = JSON.parse(uint8arrayToString(data));
+        }
+        catch (e) {
+            console.log(e);
+            return;
+        }
         console.log(jsonObj);
 
         // Store the update as the current status
