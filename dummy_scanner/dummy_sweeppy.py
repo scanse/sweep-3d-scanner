@@ -18,5 +18,5 @@ def get_scans():
     while True:
         time.sleep(1.0)
         dummy_samples = [Sample(angle=1000 * 5 * n, distance=1000, signal_strength=199)
-                         for n in range(71)]
+                         for n in range(72)]
         yield Scan(samples=dummy_samples)

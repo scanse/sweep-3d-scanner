@@ -44,17 +44,21 @@ class ScanExporter(object):
         # Write the header to the CSV
         self.writer.writeheader()
 
-    def export_2D_scan(self, scan, scan_index, mount_angle, base_angle, CCW):
+    def export_2D_scan(self, scan, scan_index, mount_angle, base_angle_1, base_angle_2, CCW):
         """Exports the scan to the file
         :param scan:
         :param scan_index:
         :param mount_angle:
-        :param base_angle:
+        :param base_angle_1: base angle before move
+        :param base_angle_2: base angle after move
         :param CCW: True if base rotates CCW during scan
         """
 
         converted_coords = scan_utils.transform_scan(
-            scan, mount_angle, base_angle if CCW else -base_angle)
+            scan,
+            mount_angle,
+            base_angle_1 if CCW else -base_angle_1,
+            base_angle_2 if CCW else -base_angle_2)
 
         for n, sample in enumerate(scan.samples):
             self.writer.writerow({
@@ -80,12 +84,18 @@ def main():
     exporter = ScanExporter()
 
     index = 0
-    for base_angle in range(0, 71):
+    for base_angle_scalar in range(0, 37):
         dummy_samples = [dummy_sweeppy.Sample(angle=1000 * 5 * n, distance=1000, signal_strength=199)
-                         for n in range(71)]
+                         for n in range(72)]
         dummy_scan = dummy_sweeppy.Scan(samples=dummy_samples)
 
-        exporter.export_2D_scan(dummy_scan, index, 90, base_angle * 5, False)
+        exporter.export_2D_scan(
+            dummy_scan,
+            index,
+            90,
+            base_angle_scalar * 5,          # angle before move
+            (base_angle_scalar + 1) * 5,    # angle after move
+            False)
         index = index + 1
 
 if __name__ == '__main__':

@@ -170,7 +170,10 @@ class Scanner(object):
                 scan,
                 scan_count,
                 self.settings.get_mount_angle(),
+                # base angle before move
                 angle_between_sweeps * scan_count,
+                # base angle after move
+                angle_between_sweeps * (scan_count + 1),
                 False
             )
 
