@@ -150,7 +150,8 @@ class Scanner(object):
                 scan_count,
                 self.settings.get_mount_angle(),
                 angle_between_sweeps * scan_count,          # base angle before move
-                angle_between_sweeps * (scan_count + 1),    # base angle after move
+                # base angle after move
+                angle_between_sweeps * (scan_count + 1),
                 False
             )
 
@@ -267,7 +268,7 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('-dz', '--dead_zone',
                         help='Starting angle of deadzone',
-                        default=120,
+                        default=135,
                         required=False)
     default_filename = "Scan " + datetime.datetime.fromtimestamp(
         time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'

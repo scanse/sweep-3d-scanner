@@ -292,7 +292,7 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('-dz', '--dead_zone',
                         help='Starting angle of deadzone',
-                        default=120,
+                        default=135,
                         required=False)
     default_filename = "Scan " + datetime.datetime.fromtimestamp(
         time.time()).strftime('%Y-%m-%d %H-%M-%S') + '.csv'
