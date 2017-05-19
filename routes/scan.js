@@ -22,7 +22,7 @@ const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
 const PY_CLEANUP_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "cleanup.py");
 
 // Backend variables
-var currentScannerStatus = null;
+var updateQueue = [];
 
 // Setup express
 var app = express();
@@ -52,8 +52,12 @@ router.route('/')
 // request an update
 router.route('/request_update')
     .get(function (req, res, next) {
-        let statusObj = currentScannerStatus;
-        res.send(statusObj);
+        // stringify the array of updates
+        let updatesSinceLastRequest = JSON.stringify(updateQueue);
+        // clear the array of updates
+        updateQueue = [];
+        // send the stringified version
+        res.send(updatesSinceLastRequest);
     })
 
 // submit a scan request
@@ -72,7 +76,7 @@ router.route('/submit_scan_request')
 // Start the scanner script
 //TODO: convert over to using the settings enums from the utils file
 function performScan(params) {
-    currentScannerStatus = null;
+    updateQueue = [];
 
     // strip away any directory or extension, then add .csv extension explicitly
     let filename = path.parse(params.file_name).name + '.csv';
@@ -98,21 +102,21 @@ function performScan(params) {
         console.log(jsonObj);
 
         // Store the update as the current status
-        currentScannerStatus = jsonObj;
+        updateQueue.push(jsonObj);
 
         // If the update indicates a failure
-        if (currentScannerStatus.status === 'failed')
+        if (jsonObj.status === 'failed')
             guaranteeShutdown(scriptExecution);
     });
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
         // note the status as a failure, packaged with the error message
-        currentScannerStatus = {
+        updateQueue.push({
             'type': "update",
             'status': "failed",
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
-        }
+        });
         guaranteeShutdown(scriptExecution);
         console.log(uint8arrayToString(data));
     });

@@ -24,8 +24,7 @@ const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
 const PY_CLEANUP_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "cleanup.py");
 
 // Backend variables
-var currentTestStatus = null;
-var currentTestStatusUpdateCounter = 0;
+var updateQueue = [];
 
 // Setup express
 var app = express();
@@ -51,15 +50,15 @@ router.route('/')
         res.render('component_testing');
     })
 
-
 // request an update
 router.route('/request_update')
     .get(function (req, res, next) {
-        let statusObj = currentTestStatus;
-        if (!statusObj)
-            statusObj = {};
-        statusObj.counter = currentTestStatusUpdateCounter;
-        res.send(statusObj);
+        // stringify the array of updates
+        let updatesSinceLastRequest = JSON.stringify(updateQueue);
+        // clear the array of updates
+        updateQueue = [];
+        // send the stringified version
+        res.send(updatesSinceLastRequest);
     })
 
 // submit a scan request
@@ -76,17 +75,16 @@ router.route('/submit_test_request')
 
 // Start the appropriate scanner script
 function performTest(params) {
-    currentTestStatus = null;
-    currentTestStatusUpdateCounter = 0;
+    updateQueue = [];
 
     let pyScriptToExecute = getChildProcessArgs(Number(params.test));
 
     if (!pyScriptToExecute || pyScriptToExecute.length === 0) {
-        currentTestStatus = {
+        updateQueue.push({
             'type': "update",
             'status': "failed",
             'msg': `Failed to determine test type, or test type does not exist.`
-        }
+        });
         console.log("Unknown test");
         return;
     }
@@ -107,23 +105,21 @@ function performTest(params) {
         console.log(jsonObj);
 
         // Store the update as the current status
-        currentTestStatus = jsonObj;
-        currentTestStatusUpdateCounter++;
+        updateQueue.push(jsonObj);
 
         // If the update indicates a failure
-        if (currentTestStatus.status === 'failed')
+        if (jsonObj.status === 'failed')
             guaranteeShutdown(scriptExecution);
     });
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
         // note the status as a failure, packaged with the error message
-        currentTestStatus = {
+        updateQueue.push({
             'type': "update",
             'status': "failed",
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
-        }
-        currentTestStatusUpdateCounter++;
+        });
         guaranteeShutdown(scriptExecution);
         console.log(uint8arrayToString(data));
     });

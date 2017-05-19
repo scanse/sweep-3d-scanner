@@ -6,12 +6,9 @@ $(document).ready(function () {
     init();
 });
 
-var updateCounter = null;
-
 // initialize page elements
 function init() {
     initTestForm();
-    updateCounter = 0;
 }
 
 // Initialize the test form, by populating all the input fields with appropriate options
@@ -48,34 +45,47 @@ function requestUpdate() {
             return;
         }
 
-        if (data.counter === updateCounter) {
+        let updateArray = null;
+        try {
+            updateArray = JSON.parse(data);
+        }
+        catch (e) {
+            console.log(e);
+            return;
+        }
+
+        let numUpdates = updateArray.length;
+        if (numUpdates <= 0) {
             setTimeout(requestUpdate, 300);
             return;
         }
-        updateCounter = data.counter;
 
-        switch (data.status) {
-            case 'failed':
-                $('#span_TestStatus').html("Test Failed...");
-                showFailure(data.msg);
-                break;
-            case 'instruction':
-                $('#span_TestStatus').html(data.msg);
-                setTimeout(requestUpdate, 300);
-            case 'progress':
-                updateProgressReport(data.msg);
-                setTimeout(requestUpdate, 300);
-                break;
-            case 'setup':
-                updateProgressReport(data.msg);
-                setTimeout(requestUpdate, 300);
-                break;
-            case 'complete':
-                $('#span_TestStatus').html(data.msg);
-                showSuccess(data.msg);
-                break;
-            default:
-                break;
+        let update;
+        for (let i = 0; i < numUpdates; i++) {
+            update = updateArray[i];
+            switch (update.status) {
+                case 'failed':
+                    $('#span_TestStatus').html("Test Failed...");
+                    showFailure(update.msg);
+                    break;
+                case 'instruction':
+                    $('#span_TestStatus').html(update.msg);
+                    setTimeout(requestUpdate, 300);
+                case 'progress':
+                    updateProgressReport(update.msg);
+                    setTimeout(requestUpdate, 300);
+                    break;
+                case 'setup':
+                    updateProgressReport(update.msg);
+                    setTimeout(requestUpdate, 300);
+                    break;
+                case 'complete':
+                    $('#span_TestStatus').html(update.msg);
+                    showSuccess(update.msg);
+                    break;
+                default:
+                    break;
+            }
         }
 
     }).fail(function () {
@@ -85,8 +95,6 @@ function requestUpdate() {
 
 // Request that a test be initiated
 function requestTest() {
-    updateCounter = 0;
-
     let options = readSpecifiedTestOptions();
     $.ajax({
         url: "/component_testing/submit_test_request",

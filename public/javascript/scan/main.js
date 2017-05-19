@@ -127,29 +127,48 @@ function requestUpdate() {
             return;
         }
 
-        switch (data.status) {
-            case 'failed':
-                $('#span_ScanResult').html("Scan Failed...");
-                showScanFailure(data.msg);
-                break;
-            case 'scan':
-                $('#span_ScanStatus').html(data.msg);
-                let percentage = calcPercentage(data.remaining, data.duration);
-                updateProgressBar(percentage);
-                setTimeout(requestUpdate, 300);
-                break;
-            case 'setup':
-                $('#span_ScanStatus').html(data.msg);
-                updateProgressBar(0);
-                setTimeout(requestUpdate, 300);
-                break;
-            case 'complete':
-                $('#span_ScanStatus').html(data.msg);
-                $('#span_ScanResult').html("Scan Complete!");
-                showScanSuccess(data.msg);
-                break;
-            default:
-                break;
+        let updateArray = null;
+        try {
+            updateArray = JSON.parse(data);
+        }
+        catch (e) {
+            console.log(e);
+            return;
+        }
+
+        let numUpdates = updateArray.length;
+        if (numUpdates <= 0) {
+            setTimeout(requestUpdate, 300);
+            return;
+        }
+
+        let update;
+        for (let i = 0; i < numUpdates; i++) {
+            update = updateArray[i];
+            switch (update.status) {
+                case 'failed':
+                    $('#span_ScanResult').html("Scan Failed...");
+                    showScanFailure(update.msg);
+                    break;
+                case 'scan':
+                    $('#span_ScanStatus').html(update.msg);
+                    let percentage = calcPercentage(update.remaining, update.duration);
+                    updateProgressBar(percentage);
+                    setTimeout(requestUpdate, 300);
+                    break;
+                case 'setup':
+                    $('#span_ScanStatus').html(update.msg);
+                    updateProgressBar(0);
+                    setTimeout(requestUpdate, 300);
+                    break;
+                case 'complete':
+                    $('#span_ScanStatus').html(update.msg);
+                    $('#span_ScanResult').html("Scan Complete!");
+                    showScanSuccess(update.msg);
+                    break;
+                default:
+                    break;
+            }
         }
 
     }).fail(function () {
