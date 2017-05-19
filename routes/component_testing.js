@@ -21,7 +21,7 @@ const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUs
 const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
 const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
 const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
-const PY_RELEASE_MOTOR_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "release_motors.py");
+const PY_CLEANUP_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "cleanup.py");
 
 // Backend variables
 var currentTestStatus = null;
@@ -79,36 +79,19 @@ function performTest(params) {
     currentTestStatus = null;
     currentTestStatusUpdateCounter = 0;
 
-    let pyScriptToExecute = null;
-    switch (Number(params.test)) {
-        case TestTypeEnum.SCANNER_LIMIT_SWITCH:
-            console.log("Running scanner limit switch test");
-            pyScriptToExecute = PY_SCANNER_LIMIT_SWITCH_SCRIPT;
-            break;
-        case TestTypeEnum.SCANNER_BASE:
-            console.log("Running scanner base test");
-            pyScriptToExecute = PY_SCANNER_BASE_SCRIPT;
-            break;
-        case TestTypeEnum.SWEEP_TEST:
-            console.log("Running sweep test");
-            pyScriptToExecute = PY_SWEEP_TEST_SCRIPT;
-            break;
-        case TestTypeEnum.RELEASE_MOTOR:
-            console.log("Running release motor");
-            pyScriptToExecute = PY_RELEASE_MOTOR_SCRIPT;
-            break;
-        default:
-            currentTestStatus = {
-                'type': "update",
-                'status': "failed",
-                'msg': `Failed to determine test type, or test type does not exist.`
-            }
-            console.log("Unknown test");
-            return;
-            break;
+    let pyScriptToExecute = getChildProcessArgs(Number(params.test));
+
+    if (!pyScriptToExecute || pyScriptToExecute.length === 0) {
+        currentTestStatus = {
+            'type': "update",
+            'status': "failed",
+            'msg': `Failed to determine test type, or test type does not exist.`
+        }
+        console.log("Unknown test");
+        return;
     }
 
-    const scriptExecution = spawn(PYTHON_EXECUTABLE, [pyScriptToExecute]);
+    const scriptExecution = spawn(PYTHON_EXECUTABLE, pyScriptToExecute);
 
     // Handle normal output
     scriptExecution.stdout.on('data', (data) => {
@@ -127,12 +110,9 @@ function performTest(params) {
         currentTestStatus = jsonObj;
         currentTestStatusUpdateCounter++;
 
-        // If the update indicates a failure, terminate the child process in case it is hanging
-        if (currentTestStatus.status === 'failed') {
-            setTimeout(() => {
-                scriptExecution.kill();
-            }, 500);
-        }
+        // If the update indicates a failure
+        if (currentTestStatus.status === 'failed')
+            guaranteeShutdown(scriptExecution);
     });
 
     // Handle error output
@@ -143,9 +123,93 @@ function performTest(params) {
             'status': "failed",
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
         }
-        // kill the child process in case it is hanging
+        currentTestStatusUpdateCounter++;
+        guaranteeShutdown(scriptExecution);
+        console.log(uint8arrayToString(data));
+    });
+
+    // Handle exit... 
+    // When process could not be spawned, could not be killed or sending a message to child process failed
+    // Note: the 'exit' event may or may not fire after an error has occurred.
+    scriptExecution.on('exit', (code) => {
+        console.log("Process quit with code : " + code);
+        // Kill the process on abnormal exit, in case it is hanging
+        if (Number(code) !== 0)
+            guaranteeShutdown(scriptExecution);
+    });
+}
+
+// returns an array with the appropriate test script and any arguments
+function getChildProcessArgs(testType) {
+    let pyScriptToExecute = null;
+    switch (testType) {
+        case TestTypeEnum.SCANNER_LIMIT_SWITCH:
+            console.log("Running scanner limit switch test");
+            pyScriptToExecute = [PY_SCANNER_LIMIT_SWITCH_SCRIPT];
+            break;
+        case TestTypeEnum.SCANNER_BASE:
+            console.log("Running scanner base test");
+            pyScriptToExecute = [PY_SCANNER_BASE_SCRIPT];
+            break;
+        case TestTypeEnum.SWEEP_TEST:
+            console.log("Running sweep test");
+            pyScriptToExecute = [PY_SWEEP_TEST_SCRIPT];
+            break;
+        case TestTypeEnum.RELEASE_MOTOR:
+            console.log("Running release motor");
+            pyScriptToExecute = [PY_CLEANUP_SCRIPT, "--release_motor=True"];
+            break;
+        default:
+            break;
+    }
+    return pyScriptToExecute;
+}
+
+function guaranteeShutdown(scriptExecution) {
+    // Allow time for script to try and shutdown
+    // Then kill the process in case it is hanging
+    setTimeout(() => {
+        forcefullyKillChildProcess(scriptExecution);
+        cleanupAfterUnexpectedShutdown();
+    }, 500);
+}
+
+// if process is still alive, try to kill it
+function forcefullyKillChildProcess(scriptExecution) {
+    //FIXME this might have to be a more forceful kill using exec module and the PID
+    if (typeof scriptExecution !== 'undefined' && scriptExecution)
+        scriptExecution.kill();
+}
+
+function cleanupAfterUnexpectedShutdown() {
+
+    const scriptExecution = spawn(PYTHON_EXECUTABLE, [
+        PY_CLEANUP_SCRIPT,
+        "--release_motor=True",
+        "--idle_sweep=True"
+    ]);
+
+    // Handle normal output
+    scriptExecution.stdout.on('data', (data) => {
+        let jsonObj = null;
+        try {
+            jsonObj = JSON.parse(uint8arrayToString(data));
+        }
+        catch (e) {
+            console.log(e);
+            return;
+        }
+        console.log(jsonObj);
+    });
+
+    // Handle error output
+    scriptExecution.stderr.on('data', (data) => {
+        console.log(uint8arrayToString(data)); //convert the Uint8Array to a readable string
+
+        // Allow time for script to try and shutdown
+        // Then kill the child process in case it is hanging
         setTimeout(() => {
-            scriptExecution.kill();
+            forcefullyKillChildProcess(scriptExecution);
         }, 500);
         console.log(uint8arrayToString(data));
     });
@@ -154,16 +218,9 @@ function performTest(params) {
     scriptExecution.on('exit', (code) => {
         console.log("Process quit with code : " + code);
         // Kill the process on abnormal exit, in case it is hanging
+        //FIXME this might have to be a more forceful kill using exec module and the PID
         if (Number(code) !== 0)
-            scriptExecution.kill();
-    });
-
-    // Handle close
-    scriptExecution.on('close', (code) => {
-        console.log("Process closed with code : " + code);
-        // Kill the process on abnormal close, in case it is hanging
-        if (Number(code) !== 0)
-            scriptExecution.kill();
+            forcefullyKillChildProcess(scriptExecution);
     });
 }
 

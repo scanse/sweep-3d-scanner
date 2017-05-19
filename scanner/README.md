@@ -84,3 +84,11 @@ for base_angle in range(0, 11):
 
 `sweep_constants` module defines constants for the sweep device.
 
+## cleanup
+`cleanup.py` is a simple script to cleanup any residual issues when testing scripts that fail. You can call with individual flags, or with multiple:
+```python
+# stop any active data stream and set the sweep motor speed to idle (0Hz)
+# release motors, in case the motor hat did not shutdown properly
+python cleanup.py -idle_sweep=True -release_motor=True
+```
+
