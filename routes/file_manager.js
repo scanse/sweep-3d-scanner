@@ -77,9 +77,17 @@ router.route('/download_file/:file(*)')
 
 // returns a list of available scan files
 function getScanFiles() {
-    //let scan_dir = './output_scans/';
+    // retrieve and chronolgically sort the file names
     let file_names = fs.readdirSync(scan_file_dir);
+    file_names.sort(compareFileTimestampDescending);
     return file_names;
+}
+
+// compare function used to sort a list of filenames in descending chronological order 
+// (ie: most recent first)
+function compareFileTimestampDescending(file_a, file_b) {
+    return fs.statSync(path.join(scan_file_dir, file_b)).mtime.getTime() -
+        fs.statSync(path.join(scan_file_dir, file_a)).mtime.getTime();
 }
 
 // deletes a specific scan file
