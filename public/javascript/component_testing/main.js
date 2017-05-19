@@ -56,7 +56,7 @@ function requestUpdate() {
 
         switch (data.status) {
             case 'failed':
-                $('#span_TestStatus').html(data.msg);
+                $('#span_TestStatus').html("Test Failed...");
                 showFailure(data.msg);
                 break;
             case 'instruction':
@@ -141,8 +141,8 @@ function showFailure(msg) {
     $("#alert_Warning").html('');
     $("#alert_Warning").hide();
 
-    $("#alert_Failure").html(msg);
-    $("#alert_Failure").hide();
+    $("#alert_Failure").html(`<pre>${msg}</pre>`);
+    $("#alert_Failure").show();
 
     $("#btn_ReloadPage").show();
 }

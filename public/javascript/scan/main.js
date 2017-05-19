@@ -129,7 +129,7 @@ function requestUpdate() {
 
         switch (data.status) {
             case 'failed':
-                $('#span_ScanStatus').html(data.msg);
+                $('#span_ScanResult').html("Scan Failed...");
                 showScanFailure(data.msg);
                 break;
             case 'scan':
@@ -145,6 +145,7 @@ function requestUpdate() {
                 break;
             case 'complete':
                 $('#span_ScanStatus').html(data.msg);
+                $('#span_ScanResult').html("Scan Complete!");
                 showScanSuccess(data.msg);
                 break;
             default:
