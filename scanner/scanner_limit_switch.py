@@ -30,9 +30,7 @@ class LimitSwitch(object):
         # Setup the switch
         GPIO.setmode(GPIO.BCM)
         # Configure on provided pin as...
-        # input with internal pull up resistor (for Normally Open switch)
         # input with internal pull down resistor (for Normally Closed switch)
-        #GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
         # make sure there are no prior events ?
@@ -47,9 +45,9 @@ class LimitSwitch(object):
     def setup_event_detect(self):
         """Setup the switch to note press events."""
         self.destroy()
-        # add rising edge detection on the pin, ignoring further edges
+        # add falling edge detection on the pin (in the normally closed case it comes first)
         # bouncetime ms (debouncing)
-        GPIO.add_event_detect(self.pin, GPIO.RISING,
+        GPIO.add_event_detect(self.pin, GPIO.FALLING,
                               bouncetime=self.debounce_ms)
 
     def subscribe_to_press(self, callback):
@@ -59,9 +57,9 @@ class LimitSwitch(object):
         # remove any existing subscription
         self.destroy()
         # Setup Callback
-        # add rising edge detection on the pin, ignoring further edges
+        # add falling edge detection on the pin (in the normally closed case it comes first)
         # bouncetime ms (debouncing)
-        GPIO.add_event_detect(self.pin, GPIO.RISING,
+        GPIO.add_event_detect(self.pin, GPIO.FALLING,
                               callback=callback, bouncetime=self.debounce_ms)
 
     def unsubscribe(self):
