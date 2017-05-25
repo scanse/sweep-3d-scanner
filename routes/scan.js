@@ -96,7 +96,7 @@ function performScan(params) {
             jsonObj = JSON.parse(uint8arrayToString(data));
         }
         catch (e) {
-            console.log(e);
+            console.error(e);
             return;
         }
         console.log(jsonObj);
@@ -118,7 +118,7 @@ function performScan(params) {
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
         });
         guaranteeShutdown(scriptExecution);
-        console.log(uint8arrayToString(data));
+        console.error(uint8arrayToString(data));
     });
 
     // Handle exit... 
@@ -164,7 +164,7 @@ function cleanupAfterUnexpectedShutdown() {
             jsonObj = JSON.parse(uint8arrayToString(data));
         }
         catch (e) {
-            console.log(e);
+            console.error(e);
             return;
         }
         console.log(jsonObj);
@@ -172,14 +172,13 @@ function cleanupAfterUnexpectedShutdown() {
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
-        console.log(uint8arrayToString(data)); //convert the Uint8Array to a readable string
+        console.error(uint8arrayToString(data)); //convert the Uint8Array to a readable string
 
         // Allow time for script to try and shutdown
         // Then kill the child process in case it is hanging
         setTimeout(() => {
             forcefullyKillChildProcess(scriptExecution);
         }, 500);
-        console.log(uint8arrayToString(data));
     });
 
     // Handle exit
