@@ -16,7 +16,7 @@ eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/u
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
 const PYTHON_EXECUTABLE = "python";
 // Directory for python scanner scripts
-const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "../dummy_scanner" : "../scanner"));
+const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "../scanner/dummy" : "../scanner"));
 // Python script paths
 const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
 const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");

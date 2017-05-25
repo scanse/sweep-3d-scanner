@@ -18,7 +18,7 @@ def polar_to_cartesian(radius, angle_deg):
 
 def transform_scan(scan, mount_angle, base_angle_1, base_angle_2):
     """test
-    :param mount_angle: the mount angle of the scanner realtive to the horizontal
+    :param mount_angle: the mount angle of the scanner relative to the horizontal
     :param base_angle_1: the angle of the base before moving
     :param base_angle_2: the angle of the base after moving
     """
