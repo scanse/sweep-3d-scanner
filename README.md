@@ -28,6 +28,6 @@ To make the process of contributing more efficient, please review the [contribut
 ## License Information
 -------------------
 
-Please see [LICENSE.md](LICENSE.md) for more details.
+Please see [LICENSE.md](License.md) for more details.
 
 *Distributed as-is; no warranty is given.*
