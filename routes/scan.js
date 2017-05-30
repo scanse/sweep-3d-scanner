@@ -22,10 +22,11 @@ const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
 const PY_CLEANUP_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "cleanup.py");
 
 // Backend variables
-var updateQueue = [];
+let scanScriptExecution = null;
+let updateQueue = [];
 
 // Setup express
-var app = express();
+let app = express();
 //gives your app the ability to parse JSON
 app.use(bodyParser.json());
 //allows app to read data from URLs (GET requests)
@@ -40,7 +41,7 @@ app.set('view engine', 'jade');
 app.use(express.static(path.join(__dirname, '../public')));
 
 // create a router to handle any routing
-var router = express.Router();
+let router = express.Router();
 app.use(router);
 
 // render the main scan page
@@ -72,6 +73,30 @@ router.route('/submit_scan_request')
         });
     })
 
+// request an update
+router.route('/cancel_scan')
+    .get(function (req, res, next) {
+        cancelScan();
+    })
+
+function cancelScan() {
+    // clear the array of updates
+    updateQueue = [];
+
+    // Cancel the scan
+    forcefullyKillChildProcess(scanScriptExecution);
+    cleanupAfterUnexpectedShutdown();
+
+    // clear the array of updates in case more made it in during shutdown
+    updateQueue = [];
+
+    // note the status as a failure, packaged with an error message
+    updateQueue.push({
+        'type': "update",
+        'status': "failed",
+        'msg': "Scan cancelled by user."
+    });
+}
 
 // Start the scanner script
 //TODO: convert over to using the settings enums from the utils file
@@ -81,7 +106,7 @@ function performScan(params) {
     // strip away any directory or extension, then add .csv extension explicitly
     let filename = path.parse(params.file_name).name + '.csv';
 
-    const scriptExecution = spawn(PYTHON_EXECUTABLE, [
+    scanScriptExecution = spawn(PYTHON_EXECUTABLE, [
         PY_SCAN_SCRIPT,
         `--motor_speed=${params.motor_speed}`,
         `--sample_rate=${params.sample_rate}`,
@@ -90,7 +115,7 @@ function performScan(params) {
     ]);
 
     // Handle normal output
-    scriptExecution.stdout.on('data', (data) => {
+    scanScriptExecution.stdout.on('data', (data) => {
         let jsonObj = null;
         try {
             jsonObj = JSON.parse(uint8arrayToString(data));
@@ -106,29 +131,29 @@ function performScan(params) {
 
         // If the update indicates a failure
         if (jsonObj.status === 'failed')
-            guaranteeShutdown(scriptExecution);
+            guaranteeShutdown(scanScriptExecution);
     });
 
     // Handle error output
-    scriptExecution.stderr.on('data', (data) => {
+    scanScriptExecution.stderr.on('data', (data) => {
         // note the status as a failure, packaged with the error message
         updateQueue.push({
             'type': "update",
             'status': "failed",
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
         });
-        guaranteeShutdown(scriptExecution);
+        guaranteeShutdown(scanScriptExecution);
         console.error(uint8arrayToString(data));
     });
 
     // Handle exit... 
     // When process could not be spawned, could not be killed or sending a message to child process failed
     // Note: the 'exit' event may or may not fire after an error has occurred.
-    scriptExecution.on('exit', (code) => {
+    scanScriptExecution.on('exit', (code) => {
         console.log("Process quit with code : " + code);
         // Kill the process on abnormal exit, in case it is hanging
         if (Number(code) !== 0)
-            guaranteeShutdown(scriptExecution);
+            guaranteeShutdown(scanScriptExecution);
     });
 
 }
