@@ -149,7 +149,7 @@ function getChildProcessArgs(testType) {
             break;
         case TestTypeEnum.RELEASE_MOTOR:
             console.log("Running release motor");
-            pyScriptToExecute = [PY_CLEANUP_SCRIPT, "--release_motor=True"];
+            pyScriptToExecute = [PY_CLEANUP_SCRIPT, "--release_motor"];
             break;
         default:
             break;
@@ -183,8 +183,8 @@ function cleanupAfterUnexpectedShutdown() {
     console.log("Spawning cleanup process...");
     const scriptExecution = spawn(PYTHON_EXECUTABLE, [
         PY_CLEANUP_SCRIPT,
-        "--release_motor=True",
-        "--idle_sweep=True"
+        "--release_motor",
+        "--idle_sweep"
     ]);
 
     // Handle normal output

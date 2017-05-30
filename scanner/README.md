@@ -89,6 +89,6 @@ for base_angle in range(0, 11):
 ```python
 # stop any active data stream and set the sweep motor speed to idle (0Hz)
 # release motors, in case the motor hat did not shutdown properly
-python cleanup.py -idle_sweep=True -release_motor=True
+python cleanup.py --idle_sweep --release_motor
 ```
 

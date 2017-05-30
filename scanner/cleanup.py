@@ -56,14 +56,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Performs various helper methods on a scan')
 
-    parser.add_argument('-rm', '--release_motor',
+    parser.add_argument('--release_motor',
                         help='Release any active motors (True/False)',
                         default=False,
-                        required=False)
-    parser.add_argument('-i', '--idle_sweep',
+                        required=False,
+                        action='store_true')
+    parser.add_argument('--idle_sweep',
                         help='Sets the sweep motor to idle (0Hz)',
                         default=False,
-                        required=False)
+                        required=False,
+                        action='store_true')
 
     args = parser.parse_args()
     argsdict = vars(args)
