@@ -28,7 +28,7 @@ class ScanSettings(object):
         if sample_rate is None:
             sample_rate = sweep_constants.SAMPLE_RATE_500_HZ
         if deadzone is None:
-            deadzone = 120
+            deadzone = 135
         if scan_range is None:
             scan_range = 180
         if mount_angle is None:
@@ -152,7 +152,7 @@ def main():
     custom_params = ScanSettings(
         sweep_constants.MOTOR_SPEED_2_HZ,       # desired motor speed setting
         sweep_constants.SAMPLE_RATE_750_HZ,     # desired sample rate setting
-        120,                                    # desired deadzone angle threshold
+        135,                                    # desired deadzone angle threshold
         180,                                    # desired range of movement
         -90)                                    # mount angle of device relative to horizontal plane
 
@@ -160,7 +160,7 @@ def main():
     default_params.print_details()
     custom_params.print_details()
 
-    print default_params.get_max_samples_per_scan()
+    print "Max samples per scan: {}".format(default_params.get_max_samples_per_scan())
 
 if __name__ == '__main__':
     main()
