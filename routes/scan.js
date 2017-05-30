@@ -76,6 +76,7 @@ router.route('/submit_scan_request')
 // request an update
 router.route('/cancel_scan')
     .get(function (req, res, next) {
+        console.log("Received request to cancel scan...");
         cancelScan();
     })
 
@@ -131,7 +132,7 @@ function performScan(params) {
 
         // If the update indicates a failure
         if (jsonObj.status === 'failed')
-            guaranteeShutdown(scanScriptExecution);
+            guaranteeShutdown();
     });
 
     // Handle error output
@@ -142,40 +143,46 @@ function performScan(params) {
             'status': "failed",
             'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
         });
-        guaranteeShutdown(scanScriptExecution);
+
         console.error(uint8arrayToString(data));
+        guaranteeShutdown();
     });
 
     // Handle exit... 
     // When process could not be spawned, could not be killed or sending a message to child process failed
     // Note: the 'exit' event may or may not fire after an error has occurred.
     scanScriptExecution.on('exit', (code) => {
-        console.log("Process quit with code : " + code);
-        // Kill the process on abnormal exit, in case it is hanging
-        if (Number(code) !== 0)
-            guaranteeShutdown(scanScriptExecution);
+        console.log("Scan process quit with code : " + code);
     });
-
 }
 
-function guaranteeShutdown(scriptExecution) {
+function guaranteeShutdown() {
     // Allow time for script to try and shutdown
     // Then kill the process in case it is hanging
     setTimeout(() => {
-        forcefullyKillChildProcess(scriptExecution);
-        cleanupAfterUnexpectedShutdown();
+        console.log("Doublechecking scan process is dead...");
+        if (typeof scanScriptExecution !== 'undefined' && scanScriptExecution) {
+            console.log("Scan process is still alive... attempting kill + cleanup again.");
+            forcefullyKillChildProcess(scanScriptExecution);
+            cleanupAfterUnexpectedShutdown();
+        }
     }, 500);
 }
 
 // if process is still alive, try to kill it
 function forcefullyKillChildProcess(scriptExecution) {
     //FIXME this might have to be a more forceful kill using exec module and the PID
-    if (typeof scriptExecution !== 'undefined' && scriptExecution)
+    if (typeof scriptExecution !== 'undefined' && scriptExecution) {
+        console.log("Attempting to forcefully kill child process...");
         scriptExecution.kill();
+    }
+    else {
+        console.log("Cannot forcefully kill child process as it does not exist, or has already been already killed.")
+    }
 }
 
 function cleanupAfterUnexpectedShutdown() {
-
+    console.log("Spawning cleanup process...");
     const scriptExecution = spawn(PYTHON_EXECUTABLE, [
         PY_CLEANUP_SCRIPT,
         "--release_motor=True",
@@ -208,10 +215,10 @@ function cleanupAfterUnexpectedShutdown() {
 
     // Handle exit
     scriptExecution.on('exit', (code) => {
-        console.log("Process quit with code : " + code);
+        console.log("Cleanup process quit with code : " + code);
         // Kill the process on abnormal exit, in case it is hanging
         //FIXME this might have to be a more forceful kill using exec module and the PID
-        if (Number(code) !== 0)
+        if (code !== null && Number(code) !== 0)
             forcefullyKillChildProcess(scriptExecution);
     });
 }
