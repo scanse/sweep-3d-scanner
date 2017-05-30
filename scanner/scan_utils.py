@@ -98,6 +98,18 @@ def remove_angular_window(scan, low, high):
         0.001 * sample.angle < low or 0.001 * sample.angle > high)]
 
 
+def contains_unordered_samples(scan):
+    """Returns true if the scan contains unordered samples
+        (ie: no sample in the scan has an azimuth less than or equal to the preceding sample.)
+    """
+    previous_angle = -1
+    for index, sample in enumerate(scan.samples):
+        if sample.angle <= previous_angle:
+            return True
+        previous_angle = sample.angle
+    return False
+
+
 def main():
     """Main method"""
 

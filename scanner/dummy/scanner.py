@@ -129,9 +129,14 @@ class Scanner(object):
         time.sleep(6.0)
 
         valid_scan_index = 0
+        arrival_time = 0
+        time_until_deadzone = 0
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(dummy_sweeppy.get_scans()):
+            # note the arrival time
+            arrival_time = time.time()
+
             # remove readings from unreliable distances
             scan_utils.remove_distance_extremes(
                 scan, self.settings.get_min_range_val(), self.settings.get_max_range_val())
@@ -140,9 +145,9 @@ class Scanner(object):
             scan_utils.remove_angular_window(
                 scan, self.settings.get_deadzone(), 360 - self.settings.get_deadzone())
 
-            # Catch scans that are too big, and don't include them (indicates
-            # problem reading sync byte)
-            if len(scan.samples) > self.settings.get_max_samples_per_scan():
+            # Catch scans that contain unordered samples, and discard them
+            # (this may indicate problem reading sync byte)
+            if scan_utils.contains_unordered_samples(scan):
                 continue
 
             # Export the scan
@@ -160,7 +165,10 @@ class Scanner(object):
             valid_scan_index = valid_scan_index + 1
 
             # Wait for the device to reach the threshold angle for movement
-            time.sleep(self.settings.get_time_to_deadzone_sec())
+            time_until_deadzone = self.settings.get_time_to_deadzone_sec() - \
+                (time.time() - arrival_time)
+            if time_until_deadzone > 0:
+                time.sleep(time_until_deadzone)
 
             # Move the base
             self.base.move_steps(num_stepper_steps_per_move)
