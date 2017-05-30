@@ -40,12 +40,14 @@ router.route('/')
 // request a reboot
 router.route('/request_reboot')
     .get(function (req, res, next) {
+        res.redirect('/');
         reboot();
     })
 
 // request a shutdown
 router.route('/request_shutdown')
     .get(function (req, res, next) {
+        res.redirect('/');
         shutdown();
     })
 
