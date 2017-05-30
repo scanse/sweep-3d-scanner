@@ -128,6 +128,7 @@ class Scanner(object):
         # dummy waits 6 seconds
         time.sleep(6.0)
 
+        valid_scan_index = 0
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(dummy_sweeppy.get_scans()):
@@ -147,13 +148,16 @@ class Scanner(object):
             # Export the scan
             self.exporter.export_2D_scan(
                 scan,
-                scan_count,
+                valid_scan_index,
                 self.settings.get_mount_angle(),
-                angle_between_sweeps * scan_count,          # base angle before move
+                angle_between_sweeps * valid_scan_index,          # base angle before move
                 # base angle after move
-                angle_between_sweeps * (scan_count + 1),
+                angle_between_sweeps * (valid_scan_index + 1),
                 False
             )
+
+            # increment the scan index
+            valid_scan_index = valid_scan_index + 1
 
             # Wait for the device to reach the threshold angle for movement
             time.sleep(self.settings.get_time_to_deadzone_sec())
@@ -166,11 +170,11 @@ class Scanner(object):
                 'status': "scan",
                 'msg': "Scan in Progress...",
                 'duration': num_sweeps / self.settings.get_motor_speed(),
-                'remaining': (num_sweeps - scan_count) / self.settings.get_motor_speed()
+                'remaining': (num_sweeps - valid_scan_index) / self.settings.get_motor_speed()
             })
 
             # Collect the appropriate number of 2D scans
-            if scan_count == num_sweeps:
+            if valid_scan_index >= num_sweeps:
                 break
 
         # Stop scanning
