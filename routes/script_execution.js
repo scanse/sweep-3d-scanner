@@ -91,10 +91,9 @@ router.route('/request_script_execution')
 
 // request an update 
 router.route('/cancel_scan')
-    //FIXME: this should be a POST
-    .get(function (req, res, next) {
-        console.log("Received request to cancel scan...");
+    .post(function (req, res, next) {
         cancelScript("Scan cancelled by user.");
+        res.send("success");
     })
 
 // submit a scan request

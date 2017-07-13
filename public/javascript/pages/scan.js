@@ -17,6 +17,7 @@ function initScanForm() {
     initMotorSpeedDropdown();
     initSampleRateDropdown();
     $("#btn_PerformScan").click(requestScan);
+    $("#btn_CancelScan").click(cancelScan);
 }
 
 //initializes the selectable options for the scan type select dropdown
@@ -198,6 +199,17 @@ function requestScan() {
             showScanFailure(data.errorMsg);
     }).fail(function () {
         console.log("Ajax request failed");
+    });
+}
+
+// Request an active scan be cancelled
+function cancelScan() {
+    $.ajax({
+        url: "/script_execution/cancel_scan",
+        type: 'post'
+    }).done(function (data) {
+        console.log(data == "success" ?
+            "Successfully canceled scan." : "Failed to cancel scan.");
     });
 }
 
