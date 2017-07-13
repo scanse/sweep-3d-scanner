@@ -120,7 +120,7 @@ function updateProgressBar(percentage) {
 // Requests an update regarding scan progress
 function requestUpdate() {
     $.ajax({
-        url: "/scan/request_update"
+        url: "/script_execution/request_update"
     }).done(function (data) {
         if (typeof data === 'undefined' || !data || data === null) {
             setTimeout(requestUpdate, 300);
@@ -181,14 +181,17 @@ function requestScan() {
     let options = readSpecifiedScanOptions();
 
     $.ajax({
-        url: "/scan/submit_scan_request",
-        data: options,
+        url: "/script_execution/request_script_execution",
+        data: {
+            type: 'scan_request',
+            params: options
+        },
         dataType: "json"
     }).done(function (data) {
         console.log(data);
-        if (data.bSumittedScanRequest) {
+        if (data.bSumittedRequest) {
             //FIXME: only show progress when the scanner actually returns an update
-            showScanProgress(data.scanParams);
+            showScanProgress(data.params);
             requestUpdate();
         }
         else

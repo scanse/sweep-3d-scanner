@@ -38,7 +38,7 @@ function initTestTypeDropdown() {
 // Requests an update regarding scan progress
 function requestUpdate() {
     $.ajax({
-        url: "/component_testing/request_update"
+        url: "/script_execution/request_update"
     }).done(function (data) {
         if (typeof data === 'undefined' || !data || data === null) {
             setTimeout(requestUpdate, 300);
@@ -97,13 +97,16 @@ function requestUpdate() {
 function requestTest() {
     let options = readSpecifiedTestOptions();
     $.ajax({
-        url: "/component_testing/submit_test_request",
-        data: options,
+        url: "/script_execution/request_script_execution",
+        data: {
+            type: 'test_request',
+            params: options
+        },
         dataType: "json"
     }).done(function (data) {
         console.log(data);
-        if (data.bSumittedTestRequest) {
-            let testDisplayName = TestTypeEnum.properties[data.testParams.test].displayName;
+        if (data.bSumittedRequest) {
+            //let testDisplayName = TestTypeEnum.properties[data.params.test].displayName;
             //showWarning(`Not yet implemented... but would be performing test: ${testDisplayName}`);
             showTestProgress();
             requestUpdate();

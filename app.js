@@ -8,15 +8,14 @@ var app = express();
 
 // Import various routes
 let route_INDEX = require('./routes/index.js');
-let route_SCAN = require('./routes/scan.js');
 let route_FILE_MANAGER = require('./routes/file_manager.js');
-let route_COMPONENT_TESTING = require('./routes/component_testing.js');
+let route_SCRIPT_EXECUTION = require('./routes/script_execution.js');
 
-// Handle each page within a separate route file (imported at top)
+// Render pages from the route_INDEX
 app.use('/', route_INDEX);
-app.use('/scan', route_SCAN);
+// Manage files and script execution from dedicated routes (not associated with a frontend)
 app.use('/file_manager', route_FILE_MANAGER);
-app.use('/component_testing', route_COMPONENT_TESTING);
+app.use('/script_execution', route_SCRIPT_EXECUTION);
 
 var server;
 if (GLOBAL_APPLICATION_VARIABLE_bUseDummy) {

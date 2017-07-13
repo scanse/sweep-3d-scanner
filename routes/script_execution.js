@@ -1,6 +1,6 @@
 /**
- * Scan Route:
- * Contains all the route and backend logic for the scan page.
+ * Script Execution Route:
+ * Contains all the route and backend logic for running python scripts.
  */
 
 // Module Includes
@@ -17,37 +17,39 @@ eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/u
 const PYTHON_EXECUTABLE = "python";
 // Directory for python scanner scripts
 const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "../scanner/dummy" : "../scanner"));
-// Python script path
-const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
+// Python script paths
+const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
+const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
+const PY_SWEEP_TEST_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "sweep_test.py");
 const PY_CLEANUP_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "cleanup.py");
+const PY_SCAN_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner.py");
 
 // Backend variables
-let scanScriptExecution = null;
-let updateQueue = [];
+let CURRENT_SCRIPT_EXECUTION = null;
+var updateQueue = [];
 
 // Setup express
-let app = express();
+var app = express();
 //gives your app the ability to parse JSON
 app.use(bodyParser.json());
 //allows app to read data from URLs (GET requests)
 app.use(bodyParser.urlencoded({ extended: false }));
 
-
-//set the views folder and the view engine
-app.set('views', path.join(__dirname, '../views'));
-app.set('view engine', 'jade');
-
-//tells app to use the /public directory where stylesheets and scripts are stored
-app.use(express.static(path.join(__dirname, '../public')));
-
 // create a router to handle any routing
-let router = express.Router();
+var router = express.Router();
 app.use(router);
 
-// render the main scan page
+// this route doesn't have a front end or a main page
 router.route('/')
-    .get(function (req, res) {
-        res.render('scan');
+    .all(function (req, res, next) {
+        console.log('Someone made a request!');
+        next();
+    })
+    .get(function (req, res, next) {
+        console.log('received get');
+    })
+    .post(function (req, res, next) {
+        console.log('received post');
     })
 
 // request an update
@@ -62,30 +64,58 @@ router.route('/request_update')
     })
 
 // submit a scan request
-router.route('/submit_scan_request')
+router.route('/request_script_execution')
+    // FIXME: this should be a POST
     .get(function (req, res, next) {
         let data = req.query; // data carries the scan params
-        performScan(data);
+        switch (data.type) {
+            case 'scan_request':
+                performScan(data.params);
+                break;
+            case 'test_request':
+                performTest(data.params);
+                break;
+            default:
+                res.send({
+                    bSumittedRequest: false,
+                    errorMsg: `Unknown request type: ${data.type}.` //FIXME: currently just sending the same data back
+                });
+                return;
+        }
 
         res.send({
-            bSumittedScanRequest: true,
-            scanParams: data //FIXME: currently just sending the same data back
+            bSumittedRequest: true,
+            params: data.params //FIXME: currently just sending the same data back
         });
     })
 
-// request an update
+// request an update 
 router.route('/cancel_scan')
+    //FIXME: this should be a POST
     .get(function (req, res, next) {
         console.log("Received request to cancel scan...");
-        cancelScan();
+        cancelScript("Scan cancelled by user.");
     })
 
-function cancelScan() {
+// submit a scan request
+router.route('/submit_test_request')
+    .get(function (req, res, next) {
+        let data = req.query; // data carries the test params
+        performTest(data);
+
+        res.send({
+            bSumittedTestRequest: true,
+            testParams: data //FIXME: currently just sending the same data back
+        });
+    })
+
+
+function cancelScript(msg) {
     // clear the array of updates
     updateQueue = [];
 
     // Cancel the scan
-    forcefullyKillChildProcess(scanScriptExecution);
+    forcefullyKillChildProcess(CURRENT_SCRIPT_EXECUTION);
     cleanupAfterUnexpectedShutdown();
 
     // clear the array of updates in case more made it in during shutdown
@@ -95,28 +125,34 @@ function cancelScan() {
     updateQueue.push({
         'type': "update",
         'status': "failed",
-        'msg': "Scan cancelled by user."
+        'msg': msg
     });
 }
 
 // Start the scanner script
 //TODO: convert over to using the settings enums from the utils file
 function performScan(params) {
-    updateQueue = [];
-
     // strip away any directory or extension, then add .csv extension explicitly
     let filename = path.parse(params.file_name).name + '.csv';
-
-    scanScriptExecution = spawn(PYTHON_EXECUTABLE, [
+    let argArray = [
         PY_SCAN_SCRIPT,
         `--motor_speed=${params.motor_speed}`,
         `--sample_rate=${params.sample_rate}`,
         `--angular_range=${params.angular_range}`,
         `--output=${filename}`
-    ]);
+    ];
+    executeScript(argArray);
+}
+
+function executeScript(args) {
+    // reset the update queue
+    updateQueue = [];
+
+    // launch the script
+    CURRENT_SCRIPT_EXECUTION = spawn(PYTHON_EXECUTABLE, args);
 
     // Handle normal output
-    scanScriptExecution.stdout.on('data', (data) => {
+    CURRENT_SCRIPT_EXECUTION.stdout.on('data', (data) => {
         let jsonObj = null;
         try {
             jsonObj = JSON.parse(uint8arrayToString(data));
@@ -136,7 +172,7 @@ function performScan(params) {
     });
 
     // Handle error output
-    scanScriptExecution.stderr.on('data', (data) => {
+    CURRENT_SCRIPT_EXECUTION.stderr.on('data', (data) => {
         // note the status as a failure, packaged with the error message
         updateQueue.push({
             'type': "update",
@@ -151,19 +187,64 @@ function performScan(params) {
     // Handle exit... 
     // When process could not be spawned, could not be killed or sending a message to child process failed
     // Note: the 'exit' event may or may not fire after an error has occurred.
-    scanScriptExecution.on('exit', (code) => {
-        console.log("Scan process quit with code : " + code);
+    CURRENT_SCRIPT_EXECUTION.on('exit', (code) => {
+        console.log("Child process quit with code : " + code);
     });
+}
+
+// Start the appropriate scanner script
+function performTest(params) {
+
+    let args = getChildProcessArgs(Number(params.test));
+
+    if (!args || args.length === 0) {
+        updateQueue = [];
+        updateQueue.push({
+            'type': "update",
+            'status': "failed",
+            'msg': `Failed to determine test type, or test type does not exist.`
+        });
+        console.error("Unknown test");
+        return;
+    }
+
+    executeScript(args);
+}
+
+// returns an array with the appropriate test script and any arguments
+function getChildProcessArgs(testType) {
+    let pyScriptToExecute = null;
+    switch (testType) {
+        case TestTypeEnum.SCANNER_LIMIT_SWITCH:
+            console.log("Running scanner limit switch test");
+            pyScriptToExecute = [PY_SCANNER_LIMIT_SWITCH_SCRIPT];
+            break;
+        case TestTypeEnum.SCANNER_BASE:
+            console.log("Running scanner base test");
+            pyScriptToExecute = [PY_SCANNER_BASE_SCRIPT];
+            break;
+        case TestTypeEnum.SWEEP_TEST:
+            console.log("Running sweep test");
+            pyScriptToExecute = [PY_SWEEP_TEST_SCRIPT];
+            break;
+        case TestTypeEnum.RELEASE_MOTOR:
+            console.log("Running release motor");
+            pyScriptToExecute = [PY_CLEANUP_SCRIPT, "--release_motor"];
+            break;
+        default:
+            break;
+    }
+    return pyScriptToExecute;
 }
 
 function guaranteeShutdown() {
     // Allow time for script to try and shutdown
     // Then kill the process in case it is hanging
     setTimeout(() => {
-        console.log("Doublechecking scan process is dead...");
-        if (typeof scanScriptExecution !== 'undefined' && scanScriptExecution) {
+        console.log("Doublechecking child process is dead...");
+        if (typeof CURRENT_SCRIPT_EXECUTION !== 'undefined' && CURRENT_SCRIPT_EXECUTION) {
             console.log("Scan process is still alive... attempting kill + cleanup again.");
-            forcefullyKillChildProcess(scanScriptExecution);
+            forcefullyKillChildProcess(CURRENT_SCRIPT_EXECUTION);
             cleanupAfterUnexpectedShutdown();
         }
     }, 500);

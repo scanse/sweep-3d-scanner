@@ -37,8 +37,26 @@ router.route('/')
         console.log('received post');
     })
 
+
+router.route('/scan')
+    .get(function (req, res, next) {
+        res.render('scan');
+    })
+
+router.route('/file_manager')
+    .get(function (req, res, next) {
+        res.render('file_manager');
+    })
+
+router.route('/component_testing')
+    .get(function (req, res, next) {
+        res.render('component_testing');
+    })
+
+
 // request a reboot
 router.route('/request_reboot')
+    //FIXME: This should be a POST
     .get(function (req, res, next) {
         res.redirect('/');
         reboot();
@@ -46,6 +64,7 @@ router.route('/request_reboot')
 
 // request a shutdown
 router.route('/request_shutdown')
+    //FIXME: This should be a POST
     .get(function (req, res, next) {
         res.redirect('/');
         shutdown();
