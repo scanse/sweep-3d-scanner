@@ -63,7 +63,7 @@ router.route('/request_update')
         res.send(updatesSinceLastRequest);
     })
 
-// submit a scan request
+// request the execution of a python script
 router.route('/request_script_execution')
     // FIXME: this should be a POST
     .get(function (req, res, next) {
@@ -78,7 +78,7 @@ router.route('/request_script_execution')
             default:
                 res.send({
                     bSumittedRequest: false,
-                    errorMsg: `Unknown request type: ${data.type}.` //FIXME: currently just sending the same data back
+                    errorMsg: `Unknown request type: ${data.type}.`
                 });
                 return;
         }
@@ -89,26 +89,14 @@ router.route('/request_script_execution')
         });
     })
 
-// request an update 
+// request to cancel a scan in progress 
 router.route('/cancel_scan')
     .post(function (req, res, next) {
         cancelScript("Scan cancelled by user.");
         res.send("success");
     })
 
-// submit a scan request
-router.route('/submit_test_request')
-    .get(function (req, res, next) {
-        let data = req.query; // data carries the test params
-        performTest(data);
-
-        res.send({
-            bSumittedTestRequest: true,
-            testParams: data //FIXME: currently just sending the same data back
-        });
-    })
-
-
+// cancel a scan in progress
 function cancelScript(msg) {
     // clear the array of updates
     updateQueue = [];
@@ -128,11 +116,12 @@ function cancelScript(msg) {
     });
 }
 
-// Start the scanner script
+// Start the main scanner script
 //TODO: convert over to using the settings enums from the utils file
 function performScan(params) {
     // strip away any directory or extension, then add .csv extension explicitly
     let filename = path.parse(params.file_name).name + '.csv';
+
     let argArray = [
         PY_SCAN_SCRIPT,
         `--motor_speed=${params.motor_speed}`,
@@ -140,7 +129,26 @@ function performScan(params) {
         `--angular_range=${params.angular_range}`,
         `--output=${filename}`
     ];
+
     executeScript(argArray);
+}
+
+// Start the appropriate scanner test script
+function performTest(params) {
+    let args = getChildProcessArgs(Number(params.test));
+
+    if (!args || args.length === 0) {
+        updateQueue = [];
+        updateQueue.push({
+            'type': "update",
+            'status': "failed",
+            'msg': `Failed to determine test type, or test type does not exist.`
+        });
+        console.error("Unknown test");
+        return;
+    }
+
+    executeScript(args);
 }
 
 function executeScript(args) {
@@ -189,25 +197,6 @@ function executeScript(args) {
     CURRENT_SCRIPT_EXECUTION.on('exit', (code) => {
         console.log("Child process quit with code : " + code);
     });
-}
-
-// Start the appropriate scanner script
-function performTest(params) {
-
-    let args = getChildProcessArgs(Number(params.test));
-
-    if (!args || args.length === 0) {
-        updateQueue = [];
-        updateQueue.push({
-            'type': "update",
-            'status': "failed",
-            'msg': `Failed to determine test type, or test type does not exist.`
-        });
-        console.error("Unknown test");
-        return;
-    }
-
-    executeScript(args);
 }
 
 // returns an array with the appropriate test script and any arguments
