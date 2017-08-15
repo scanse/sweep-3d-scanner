@@ -5,7 +5,7 @@ The sweep-3d-scanner is an open source community project. The goal is to make an
 
 ## Documentation
 - For all things software, see the [wiki](https://github.com/scanse/sweep-3d-scanner/wiki).
-- For all things hardware, see the [hackster project page](https://www.hackster.io/scanse/sweep-3d-scanner-035a5f)
+- For parts lists, assembly instructions, and component kits, see the [main scanner project page](http://scanse.io/3d-scanning-kit/)
 
 
 ## Contributing:
