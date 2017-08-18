@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.4.1
+This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
+
+**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
+
+### Features
+- None
+
+### Improvements
+- Updated sweep-sdk to latest v1.2.3 at the time of release
+- Simplified dummy. See #39 #1 #2
+- Dummy now mimics selected settings. See #39 #1 #2
+- Updated docs
+
+### Bugfixes
+- Fill gap in data resulting from split transform of each 2D scan. See #38
+
+
+### Known Issues
+- Motor control in CCW direction is noisy, erratic and choppy. See #14 
+- Occasionally, stepper motor is not released (base does not spin freely after scan is complete). Try releasing the motor using the `Release Motor` script from the `Component Testing` page before performing another scan. See #10 
+- Occasionally scan does not start from the base home angle, resulting in the base hitting the end-stop before completing a 180 degree scan. See #11 
+- Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
+
 ## v0.4.0
 This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
 
