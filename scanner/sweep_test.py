@@ -2,13 +2,31 @@
 import json
 import sys
 import time
-import traceback
-from sweeppy import Sweep
+import argparse
 import sweep_constants
 
 
-def main():
+def output_message(message):
+    """Print the provided input & flush stdout so parent process registers the message"""
+    print message
+    sys.stdout.flush()
+
+
+def output_json_message(json_input):
+    """Print the provided json & flush stdout so parent process registers the message"""
+    serialized_json = json.dumps(json_input, separators=(',', ':'))
+    output_message(serialized_json)
+
+
+def main(arg_dict):
     """Tests the sweep's basic functions"""
+
+    # import the appropriate modules
+    if arg_dict['use_dummy']:
+        from dummy_sweeppy import Sweep
+    else:
+        from sweeppy import Sweep
+
     with Sweep('/dev/ttyUSB0') as sweep:
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Testing motor ready."})
@@ -59,16 +77,17 @@ def main():
             {'type': "update", 'status': "complete", 'msg': "Finished Test!"})
 
 
-def output_message(message):
-    """Print the provided input & flush stdout so parent process registers the message"""
-    print message
-    sys.stdout.flush()
-
-
-def output_json_message(json_input):
-    """Print the provided json & flush stdout so parent process registers the message"""
-    serialized_json = json.dumps(json_input, separators=(',', ':'))
-    output_message(serialized_json)
-
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Creates a Sweep object and performs a test')
+
+    parser.add_argument('-d', '--use_dummy',
+                        help='Use the dummy verison without hardware',
+                        default=False,
+                        action='store_true',
+                        required=False)
+
+    args = parser.parse_args()
+    argsdict = vars(args)
+
+    main(argsdict)

@@ -1,10 +1,9 @@
 """Defines a 3D scanner"""
-from sweeppy import Sweep
 import sweep_constants
 import scan_settings
-import scanner_base
 import scan_exporter
 import scan_utils
+import scanner_base
 import time
 import datetime
 import math
@@ -35,7 +34,7 @@ class Scanner(object):
         if device is None:
             self.shutdown("Please provide a device to scanner constructor.")
         if base is None:
-            base = scanner_base.ScannerBase()
+            self.shutdown("Please provide a base to scanner constructor.")
         if settings is None:
             settings = scan_settings.ScanSettings()
         if exporter is None:
@@ -249,12 +248,6 @@ class Scanner(object):
         """Returns the ScannerBase object for this scanner"""
         return self.base
 
-    def set_base(self, base=None):
-        """Sets the base for this scanner to the provided ScannerBase object"""
-        if base is None:
-            base = scanner_base.ScannerBase()
-        self.base = base
-
     def get_settings(self):
         """Returns the scan settings for this scanner"""
         return self.settings
@@ -292,11 +285,22 @@ def main(arg_dict):
 
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
+
+    # import the appropriate modules
+    if arg_dict['use_dummy']:
+        from dummy_sweeppy import Sweep
+    else:
+        from sweeppy import Sweep
+
+    # Create a scanner base
+    base = scanner_base.ScannerBase(use_dummy=arg_dict['use_dummy'])
+
+    # Create sweep sensor, and perform scan
     with Sweep('/dev/ttyUSB0') as sweep:
         # Create a scanner object
         time.sleep(1.0)
         scanner = Scanner(
-            device=sweep, settings=settings, exporter=exporter)
+            device=sweep, base=base, settings=settings, exporter=exporter)
 
         # Setup the scanner
         scanner.setup()
@@ -336,6 +340,11 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output',
                         help='Filepath for the exported scan',
                         default=default_filename,
+                        required=False)
+    parser.add_argument('-d', '--use_dummy',
+                        help='Use the dummy verison without hardware',
+                        default=False,
+                        action='store_true',
                         required=False)
 
     args = parser.parse_args()

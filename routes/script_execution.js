@@ -16,7 +16,7 @@ eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/u
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
 const PYTHON_EXECUTABLE = "python";
 // Directory for python scanner scripts
-const SCANNER_SCRIPT_DIR = path.join(__dirname, (GLOBAL_APPLICATION_VARIABLE_bUseDummy ? "../scanner/dummy" : "../scanner"));
+const SCANNER_SCRIPT_DIR = path.join(__dirname, "../scanner");
 // Python script paths
 const PY_SCANNER_LIMIT_SWITCH_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_limit_switch.py");
 const PY_SCANNER_BASE_SCRIPT = path.join(SCANNER_SCRIPT_DIR, "scanner_base.py");
@@ -129,6 +129,8 @@ function performScan(params) {
         `--angular_range=${params.angular_range}`,
         `--output=${filename}`
     ];
+    if (GLOBAL_APPLICATION_VARIABLE_bUseDummy)
+        argArray.push('--use_dummy');
 
     executeScript(argArray);
 }
@@ -201,28 +203,32 @@ function executeScript(args) {
 
 // returns an array with the appropriate test script and any arguments
 function getChildProcessArgs(testType) {
-    let pyScriptToExecute = null;
+    let pyScriptWithArgs = null;
     switch (testType) {
         case TestTypeEnum.SCANNER_LIMIT_SWITCH:
             console.log("Running scanner limit switch test");
-            pyScriptToExecute = [PY_SCANNER_LIMIT_SWITCH_SCRIPT];
+            pyScriptWithArgs = [PY_SCANNER_LIMIT_SWITCH_SCRIPT];
             break;
         case TestTypeEnum.SCANNER_BASE:
             console.log("Running scanner base test");
-            pyScriptToExecute = [PY_SCANNER_BASE_SCRIPT];
+            pyScriptWithArgs = [PY_SCANNER_BASE_SCRIPT];
             break;
         case TestTypeEnum.SWEEP_TEST:
             console.log("Running sweep test");
-            pyScriptToExecute = [PY_SWEEP_TEST_SCRIPT];
+            pyScriptWithArgs = [PY_SWEEP_TEST_SCRIPT];
             break;
         case TestTypeEnum.RELEASE_MOTOR:
             console.log("Running release motor");
-            pyScriptToExecute = [PY_CLEANUP_SCRIPT, "--release_motor"];
+            pyScriptWithArgs = [PY_CLEANUP_SCRIPT, "--release_motor"];
             break;
         default:
+            return null;
             break;
     }
-    return pyScriptToExecute;
+    // Add dummy flag if we don't expect any hardware
+    if (GLOBAL_APPLICATION_VARIABLE_bUseDummy)
+        pyScriptWithArgs.push('--use_dummy');
+    return pyScriptWithArgs;
 }
 
 function guaranteeShutdown() {
@@ -252,11 +258,12 @@ function forcefullyKillChildProcess(scriptExecution) {
 
 function cleanupAfterUnexpectedShutdown() {
     console.log("Spawning cleanup process...");
-    const scriptExecution = spawn(PYTHON_EXECUTABLE, [
-        PY_CLEANUP_SCRIPT,
-        "--release_motor",
-        "--idle_sweep"
-    ]);
+
+    let argArray = [PY_CLEANUP_SCRIPT, "--release_motor", "--idle_sweep"];
+    if (GLOBAL_APPLICATION_VARIABLE_bUseDummy)
+        argArray.push('--use_dummy');
+
+    const scriptExecution = spawn(PYTHON_EXECUTABLE, argArray);
 
     // Handle normal output
     scriptExecution.stdout.on('data', (data) => {

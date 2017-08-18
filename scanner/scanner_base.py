@@ -1,9 +1,8 @@
 """Defines the rotating base of the scanner"""
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
 import time
 import atexit
 import itertools
-import scanner_limit_switch
+import argparse
 import sys
 import json
 
@@ -15,7 +14,7 @@ class ScannerBase(object):
         stepper: the stepper motor
     """
 
-    def __init__(self, stepper_steps_per_rev=None, stepper_motor_port=None, switch=None):
+    def __init__(self, stepper_steps_per_rev=None, stepper_motor_port=None, switch=None, use_dummy=False):
         """Return a ScannerBase object
         :param steps_per_rev: the number of steps per revolution
         :param motor_port:  the motor port #
@@ -26,10 +25,19 @@ class ScannerBase(object):
         if stepper_motor_port is None:
             stepper_motor_port = 2
         if switch is None:
-            switch = scanner_limit_switch.LimitSwitch()
+            import scanner_limit_switch
+            switch = scanner_limit_switch.LimitSwitch(use_dummy=use_dummy)
+
+        # Import appropriate module
+        if use_dummy:
+            from dummy_Adafruit_MotorHAT import Adafruit_MotorHAT
+        else:
+            from Adafruit_MotorHAT import Adafruit_MotorHAT
+
+        self.Adafruit_MotorHAT = Adafruit_MotorHAT
 
         # create a default object, no changes to I2C address or frequency
-        self.motor_hat = Adafruit_MotorHAT()
+        self.motor_hat = self.Adafruit_MotorHAT()
         self.stepper = self.motor_hat.getStepper(
             stepper_steps_per_rev, stepper_motor_port)
         # default to 1 RPM (only used during reset)
@@ -48,12 +56,12 @@ class ScannerBase(object):
             num_steps = 1
         if num_steps < 0:
             num_steps = abs(num_steps)
-            direction = Adafruit_MotorHAT.FORWARD
+            direction = self.Adafruit_MotorHAT.FORWARD
         else:
-            direction = Adafruit_MotorHAT.BACKWARD
+            direction = self.Adafruit_MotorHAT.BACKWARD
 
         for _ in itertools.repeat(None, num_steps):
-            self.stepper.oneStep(direction, Adafruit_MotorHAT.MICROSTEP)
+            self.stepper.oneStep(direction, self.Adafruit_MotorHAT.MICROSTEP)
 
     def move_degrees(self, num_deg=None):
         """Moves the stepper motor by the specified num_deg, as close as step resolution permits.
@@ -80,14 +88,14 @@ class ScannerBase(object):
             self.switch.setup_event_detect()
             while not self.switch.check_for_press():
                 # use DOUBLE mode for more torque
-                self.stepper.step(2, Adafruit_MotorHAT.FORWARD,
-                                  Adafruit_MotorHAT.DOUBLE)
+                self.stepper.step(2, self.Adafruit_MotorHAT.FORWARD,
+                                  self.Adafruit_MotorHAT.DOUBLE)
             self.switch.destroy()
 
         # Move forward off the switch
         for _ in itertools.repeat(None, 12):
-            self.stepper.step(1, Adafruit_MotorHAT.BACKWARD,
-                              Adafruit_MotorHAT.DOUBLE)
+            self.stepper.step(1, self.Adafruit_MotorHAT.BACKWARD,
+                              self.Adafruit_MotorHAT.DOUBLE)
 
         # check that the switch is not already pressed
         # (edge case where a rising edge event won't occur)
@@ -96,16 +104,16 @@ class ScannerBase(object):
             self.switch.setup_event_detect()
             while not self.switch.check_for_press():
                 # use DOUBLE mode for more torque
-                self.stepper.step(1, Adafruit_MotorHAT.FORWARD,
-                                  Adafruit_MotorHAT.DOUBLE)
+                self.stepper.step(1, self.Adafruit_MotorHAT.FORWARD,
+                                  self.Adafruit_MotorHAT.DOUBLE)
             self.switch.destroy()
 
     def turn_off_motors(self):
         """Turns off stepper motor, recommended for auto-disabling motors on shutdown!"""
-        self.motor_hat.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
-        self.motor_hat.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
-        self.motor_hat.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-        self.motor_hat.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
+        self.motor_hat.getMotor(1).run(self.Adafruit_MotorHAT.RELEASE)
+        self.motor_hat.getMotor(2).run(self.Adafruit_MotorHAT.RELEASE)
+        self.motor_hat.getMotor(3).run(self.Adafruit_MotorHAT.RELEASE)
+        self.motor_hat.getMotor(4).run(self.Adafruit_MotorHAT.RELEASE)
 
 
 def output_message(message):
@@ -120,12 +128,12 @@ def output_json_message(json_input):
     output_message(serialized_json)
 
 
-def test_demo():
+def test_demo(use_dummy=False):
     """Performs a small test demo (reset, and move base 90 degrees)"""
     output_json_message(
         {'type': "update", 'status': "setup", 'msg': "Creating base!"})
 
-    base = ScannerBase()
+    base = ScannerBase(use_dummy=use_dummy)
 
     # pause to avoid accidentally flushing the previous message contents
     time.sleep(0.1)
@@ -146,10 +154,22 @@ def test_demo():
         {'type': "update", 'status': "complete", 'msg': "Finished test!"})
 
 
-def main():
+def main(arg_dict):
     """Creates a base and moves it 90 degrees"""
-    test_demo()
+    test_demo(use_dummy=arg_dict['use_dummy'])
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Creates a 3D scanner base and performs a test')
+
+    parser.add_argument('-d', '--use_dummy',
+                        help='Use the dummy verison without hardware',
+                        default=False,
+                        action='store_true',
+                        required=False)
+
+    args = parser.parse_args()
+    argsdict = vars(args)
+
+    main(argsdict)

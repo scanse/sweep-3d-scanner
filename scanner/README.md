@@ -20,7 +20,7 @@ with Sweep('/dev/ttyUSB0') as sweep:
     # Create a default base obj
     base = scanner_base.ScannerBase()
     # Create a scanner object
-    scanner = Scanner(base, sweep, settings)
+    scanner = Scanner(device=sweep, base=base, settings=settings)
 
     # Setup the scanner
     scanner.setup()
@@ -86,9 +86,23 @@ for base_angle in range(0, 11):
 
 ## cleanup
 `cleanup.py` is a simple script to cleanup any residual issues when testing scripts that fail. You can call with individual flags, or with multiple:
-```python
+```bash
 # stop any active data stream and set the sweep motor speed to idle (0Hz)
 # release motors, in case the motor hat did not shutdown properly
-python cleanup.py --idle_sweep --release_motor
+python cleanup.py --idle_sweep --release_motor --use_dummy
 ```
 
+
+# Dummy Version
+The scripts `dummy_sweeppy.py`, `dummy_Adafruit_MotorHAT.py` and `dummy_GPIO` simulate the interface and behavior of the normal `sweeppy`, `Adafruit_MotorHAT` and `Rpi.GPIO` modules respectively. These scripts are imported if the dummy flag is passed to any script like so: 
+```bash
+python scanner.py --use_dummy
+```
+
+This allows the node application to develop on a local machine with fewer dependencies. When passed the `--use_dummy` flag, the `scanner.py` script only requires:
+- python + numpy module
+
+The following are NOT required:
+- any physical hardware (sweep sensor or raspberry pi)
+- installation of `libsweep` or `sweeppy`
+- installation or even system compatibility with `Adafruit_MotorHAT` and `RPi.GPIO`
