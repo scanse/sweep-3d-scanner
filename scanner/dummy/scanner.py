@@ -116,6 +116,9 @@ class Scanner(object):
         num_sweeps = math.floor(
             1.0 * self.settings.get_scan_range() / angle_between_sweeps)
 
+        # add 2 to account for gap from splitting each scan
+        num_sweeps = num_sweeps + 2
+
         output_json_message({
             'type': "update",
             'status': "scan",
@@ -131,6 +134,8 @@ class Scanner(object):
         valid_scan_index = 0
         arrival_time = 0
         time_until_deadzone = 0
+        rotated_already = False
+
         # get_scans is coroutine-based generator lazily returning scans ad
         # infinitum
         for scan_count, scan in enumerate(dummy_sweeppy.get_scans()):
@@ -145,9 +150,27 @@ class Scanner(object):
             scan_utils.remove_angular_window(
                 scan, self.settings.get_deadzone(), 360 - self.settings.get_deadzone())
 
+            if valid_scan_index >= num_sweeps - 2:
+                # Avoid redundant data in last few partially overlapping scans
+                scan_utils.remove_angular_window(
+                    scan, self.settings.get_deadzone(), 361)
+
             # Catch scans that contain unordered samples, and discard them
             # (this may indicate problem reading sync byte)
             if scan_utils.contains_unordered_samples(scan):
+                continue
+
+            # Edge case (discard 1st scan without base movement and move base)
+            if not rotated_already:
+                # Wait for the device to reach the threshold angle for movement
+                time_until_deadzone = self.settings.get_time_to_deadzone_sec() - \
+                    (time.time() - arrival_time)
+                if time_until_deadzone > 0:
+                    time.sleep(time_until_deadzone)
+
+                # Move the base
+                self.base.move_steps(num_stepper_steps_per_move)
+                rotated_already = True
                 continue
 
             # Export the scan
