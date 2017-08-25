@@ -2,6 +2,14 @@
  * Manages client side logic for the scan page
  */
 
+// Module includes
+const _UTILS = ScannerLib.Utils;
+const _SETTINGS = ScannerLib.Settings;
+const _REQUESTS = ScannerLib.Requests;
+
+// Constants
+const updateInterval_MS = 300;
+
 $(document).ready(function () {
     init();
 });
@@ -13,65 +21,114 @@ function init() {
 
 // Initialize the scan form, by populating all the input fields with appropriate options
 function initScanForm() {
-    initScanTypeDropdown();
-    initMotorSpeedDropdown();
-    initSampleRateDropdown();
-    $("#btn_PerformScan").click(requestScan);
-    $("#btn_CancelScan").click(cancelScan);
+    _UTILS.initDropdownForEnum('select_ScanType', _SETTINGS.SCAN_TYPE_ENUM);
+    _UTILS.initDropdownForEnum('select_MotorSpeed', _SETTINGS.MOTOR_SPEED_ENUM);
+    _UTILS.initDropdownForEnum('select_SampleRate', _SETTINGS.SAMPLE_RATE_ENUM);
+
+    // Request that a scan be initiated when button is pressed
+    $("#btn_PerformScan").click(function () {
+        let options = readSpecifiedScanOptions();
+        _REQUESTS.requestScriptExecution('scan_request', options, onScanRequestResponse);
+    });
+
+    // Cancel a scan when button is pressed
+    $("#btn_CancelScan").click(function () {
+        _REQUESTS.cancelScan(function (bSuccess) {
+            console.log(bSuccess ? "Successfully canceled scan." : "Failed to cancel scan.");
+        })
+    });
 }
 
-//initializes the selectable options for the scan type select dropdown
-function initScanTypeDropdown() {
-    /* loop through the available scan types and programmatically create an option for each */
-    let optionName, optionHTML;
-    for (let key in ScanTypeEnum) {
-        //don't consider the properties key as a key
-        if (key === 'properties')
-            break;
-
-        //create a new button, and insert it into the dropdown
-        optionName = `option_ScanType_${key}`;
-        optionHTML = `  <option id="${optionName}" value="${key}"> 
-                            ${ ScanTypeEnum.properties[ScanTypeEnum[key]].displayName}
-                        </option>`
-        $("#select_ScanType").append(optionHTML);
-    }
+// Update the progress bar for scan progress
+function updateProgressBar(percentage) {
+    $('#pb_Scan').css('width', percentage + '%').attr('aria-valuenow', percentage).html(`${percentage}%`);
 }
 
-//initializes the selectable options for the motor speed select dropdown
-function initMotorSpeedDropdown() {
-    /* loop through the available motor speeds and programmatically create an option for each */
-    let optionName, optionHTML;
-    for (let key in MotorSpeedEnum) {
-        //don't consider the properties key as a key
-        if (key === 'properties')
-            break;
-
-        //create a new button, and insert it into the select dropdown
-        optionName = `option_MotorSpeed_${key}`;
-        optionHTML = `  <option id="${optionName}" value="${key}"> 
-                            ${ MotorSpeedEnum.properties[MotorSpeedEnum[key]].displayName}
-                        </option>`
-        $("#select_MotorSpeed").append(optionHTML);
+function onReceivedUpdate(data) {
+    if (typeof data === 'undefined' || !data || data === null) {
+        waitAndRequestUpdate(updateInterval_MS);
+        return;
     }
+
+    let updateArray = null;
+    try {
+        updateArray = JSON.parse(data);
+    }
+    catch (e) {
+        console.log(e);
+        return;
+    }
+
+    let numUpdates = updateArray.length;
+    for (let i = 0; i < numUpdates; i++) {
+        let update = updateArray[i];
+        switch (update.status) {
+            case 'failed':
+                $('#span_ScanResult').html("Scan Failed...");
+                showScanFailure(update.msg);
+                return;     // return early, DON'T REQUEST UPDATE
+            case 'scan':
+                $('#span_ScanStatus').html(update.msg);
+                let percentage = _UTILS.calcPercentage(update.remaining, update.duration);
+                updateProgressBar(percentage);
+                break;
+            case 'setup':
+                $('#span_ScanStatus').html(update.msg);
+                updateProgressBar(0);
+                break;
+            case 'complete':
+                $('#span_ScanStatus').html(update.msg);
+                $('#span_ScanResult').html("Scan Complete!");
+                showScanSuccess(update.msg);
+                return;     // return early, DON'T REQUEST UPDATE
+            default:
+                return;     // return early, DON'T REQUEST UPDATE
+        }
+    }
+
+    waitAndRequestUpdate(updateInterval_MS);
 }
 
-//initializes the selectable options for the sample rate select dropdown
-function initSampleRateDropdown() {
-    /* loop through the available sample rates and programmatically create an option for each */
-    let optionName, optionHTML;
-    for (let key in SampleRateEnum) {
-        //don't consider the properties key as a key
-        if (key === 'properties')
-            break;
+function waitAndRequestUpdate(waitTime_MS) {
+    setTimeout(function () {
+        // Requests an update regarding scan progress
+        _REQUESTS.requestUpdate(onReceivedUpdate);
+    }, waitTime_MS);
+}
 
-        //create a new button, and insert it into the dropdown
-        optionName = `option_SampleRate_${key}`;
-        optionHTML = `  <option id="${optionName}" value="${key}"> 
-                            ${ SampleRateEnum.properties[SampleRateEnum[key]].displayName}
-                        </option>`
-        $("#select_SampleRate").append(optionHTML);
+// callback to be executed once the server registers a scan request
+function onScanRequestResponse(data) {
+    console.log(data);
+    if (data.bSumittedRequest) {
+        //FIXME: only show progress when the scanner actually returns an update
+        showScanProgress(data.params);
+        waitAndRequestUpdate(0);
     }
+    else
+        showScanFailure(data.errorMsg);
+}
+
+// Read the currently selected scan options from the form
+function readSpecifiedScanOptions() {
+    let options = {};
+
+    let selectedKey = $('#select_ScanType').find(":selected").val();
+    let properties = _UTILS.getEnumPropertiesForKey(_SETTINGS.SCAN_TYPE_ENUM, selectedKey);
+    options.angular_range = properties.angular_range;
+
+    selectedKey = $('#select_MotorSpeed').find(":selected").val();
+    properties = _UTILS.getEnumPropertiesForKey(_SETTINGS.MOTOR_SPEED_ENUM, selectedKey);
+    options.motor_speed = properties.motor_speed;
+
+    selectedKey = $('#select_SampleRate').find(":selected").val();
+    properties = _UTILS.getEnumPropertiesForKey(_SETTINGS.SAMPLE_RATE_ENUM, selectedKey);
+    options.sample_rate = properties.sample_rate;
+
+    let d = new Date();
+    let alt_filename = "3D Scan - " + d.toDateString() + " " + d.toLocaleTimeString().replace(/:\s*/g, "-");
+    options.file_name = _UTILS.textInputHasValue("#input_FileName") ? $("#input_FileName").val() : alt_filename;
+
+    return options;
 }
 
 // Show the portion of the page that deals with scan progress
@@ -107,128 +164,8 @@ function showScanSuccess(msg) {
     $("#div_ScanProgress").hide();
     $("#div_ScanResults").show();
 
-    $("#alert_Failure").html('');
-    $("#alert_Failure").hide();
     $("#alert_Success").html(msg);
     $("#alert_Success").show();
-}
-
-// Update the progress bar for scan progress
-function updateProgressBar(percentage) {
-    $('#pb_Scan').css('width', percentage + '%').attr('aria-valuenow', percentage).html(`${percentage}%`);
-}
-
-// Requests an update regarding scan progress
-function requestUpdate() {
-    $.ajax({
-        url: "/script_execution/request_update"
-    }).done(function (data) {
-        if (typeof data === 'undefined' || !data || data === null) {
-            setTimeout(requestUpdate, 300);
-            return;
-        }
-
-        let updateArray = null;
-        try {
-            updateArray = JSON.parse(data);
-        }
-        catch (e) {
-            console.log(e);
-            return;
-        }
-
-        let numUpdates = updateArray.length;
-        if (numUpdates <= 0) {
-            setTimeout(requestUpdate, 300);
-            return;
-        }
-
-        let update;
-        for (let i = 0; i < numUpdates; i++) {
-            update = updateArray[i];
-            switch (update.status) {
-                case 'failed':
-                    $('#span_ScanResult').html("Scan Failed...");
-                    showScanFailure(update.msg);
-                    break;
-                case 'scan':
-                    $('#span_ScanStatus').html(update.msg);
-                    let percentage = calcPercentage(update.remaining, update.duration);
-                    updateProgressBar(percentage);
-                    setTimeout(requestUpdate, 300);
-                    break;
-                case 'setup':
-                    $('#span_ScanStatus').html(update.msg);
-                    updateProgressBar(0);
-                    setTimeout(requestUpdate, 300);
-                    break;
-                case 'complete':
-                    $('#span_ScanStatus').html(update.msg);
-                    $('#span_ScanResult').html("Scan Complete!");
-                    showScanSuccess(update.msg);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-    }).fail(function () {
-        console.log("Ajax request failed");
-    });
-}
-
-// Request that a scan be initiated
-function requestScan() {
-    let options = readSpecifiedScanOptions();
-
-    $.ajax({
-        url: "/script_execution/request_script_execution",
-        data: {
-            type: 'scan_request',
-            params: options
-        },
-        dataType: "json"
-    }).done(function (data) {
-        console.log(data);
-        if (data.bSumittedRequest) {
-            //FIXME: only show progress when the scanner actually returns an update
-            showScanProgress(data.params);
-            requestUpdate();
-        }
-        else
-            showScanFailure(data.errorMsg);
-    }).fail(function () {
-        console.log("Ajax request failed");
-    });
-}
-
-// Request an active scan be cancelled
-function cancelScan() {
-    $.ajax({
-        url: "/script_execution/cancel_scan",
-        type: 'post'
-    }).done(function (data) {
-        console.log(data == "success" ?
-            "Successfully canceled scan." : "Failed to cancel scan.");
-    });
-}
-
-// Read the currently selected scan options from the form
-function readSpecifiedScanOptions() {
-    let options = {};
-
-    let selectedKey = $('#select_ScanType').find(":selected").val();
-    options.angular_range = ScanTypeEnum.properties[ScanTypeEnum[selectedKey]].angular_range;
-
-    selectedKey = $('#select_MotorSpeed').find(":selected").val();
-    options.motor_speed = MotorSpeedEnum.properties[MotorSpeedEnum[selectedKey]].motor_speed;
-
-    selectedKey = $('#select_SampleRate').find(":selected").val();
-    options.sample_rate = SampleRateEnum.properties[SampleRateEnum[selectedKey]].sample_rate;
-
-    let d = new Date();
-    let alt_filename = "3D Scan - " + d.toDateString() + " " + d.toLocaleTimeString().replace(/:\s*/g, "-");
-    options.file_name = textInputHasValue("#input_FileName") ? $("#input_FileName").val() : alt_filename;
-
-    return options;
+    $("#alert_Failure").html('');
+    $("#alert_Failure").hide();
 }

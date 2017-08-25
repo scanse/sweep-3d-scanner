@@ -10,8 +10,16 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const spawn = require('child_process').spawn;
 
-// Util File Include (defines enums + helper methods)
-eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/utils.js')).toString()]);
+// Read and eval scanner library
+const SCANNER_SRC_DIR = path.join(__dirname, "../public/javascript/scanner/");
+eval(fs.readFileSync(path.join(SCANNER_SRC_DIR, 'namespace.js'), 'utf8'));
+eval(fs.readFileSync(path.join(SCANNER_SRC_DIR, 'Utils.js'), 'utf8'));
+eval(fs.readFileSync(path.join(SCANNER_SRC_DIR, 'Settings.js'), 'utf8'));
+const _UTILS = ScannerLib.Utils;
+const _SETTINGS = ScannerLib.Settings;
+
+// // Util File Include (defines enums + helper methods)
+// eval.apply(global, [fs.readFileSync(path.join(__dirname, '../public/javascript/utils.js')).toString()]);
 
 // Provide the path of the python executable, if python is available as environment variable then you can use only "python"
 const PYTHON_EXECUTABLE = "python";
@@ -164,7 +172,7 @@ function executeScript(args) {
     CURRENT_SCRIPT_EXECUTION.stdout.on('data', (data) => {
         let jsonObj = null;
         try {
-            jsonObj = JSON.parse(uint8arrayToString(data));
+            jsonObj = JSON.parse(_UTILS.uint8arrayToString(data));
         }
         catch (e) {
             console.error(e);
@@ -186,10 +194,10 @@ function executeScript(args) {
         updateQueue.push({
             'type': "update",
             'status': "failed",
-            'msg': uint8arrayToString(data) //convert the Uint8Array to a readable string
+            'msg': _UTILS.uint8arrayToString(data) //convert the Uint8Array to a readable string
         });
 
-        console.error(uint8arrayToString(data));
+        console.error(_UTILS.uint8arrayToString(data));
         guaranteeShutdown();
     });
 
@@ -205,19 +213,19 @@ function executeScript(args) {
 function getChildProcessArgs(testType) {
     let pyScriptWithArgs = null;
     switch (testType) {
-        case TestTypeEnum.SCANNER_LIMIT_SWITCH:
+        case _SETTINGS.TEST_TYPE_ENUM.SCANNER_LIMIT_SWITCH:
             console.log("Running scanner limit switch test");
             pyScriptWithArgs = [PY_SCANNER_LIMIT_SWITCH_SCRIPT];
             break;
-        case TestTypeEnum.SCANNER_BASE:
+        case _SETTINGS.TEST_TYPE_ENUM.SCANNER_BASE:
             console.log("Running scanner base test");
             pyScriptWithArgs = [PY_SCANNER_BASE_SCRIPT];
             break;
-        case TestTypeEnum.SWEEP_TEST:
+        case _SETTINGS.TEST_TYPE_ENUM.SWEEP_TEST:
             console.log("Running sweep test");
             pyScriptWithArgs = [PY_SWEEP_TEST_SCRIPT];
             break;
-        case TestTypeEnum.RELEASE_MOTOR:
+        case _SETTINGS.TEST_TYPE_ENUM.RELEASE_MOTOR:
             console.log("Running release motor");
             pyScriptWithArgs = [PY_CLEANUP_SCRIPT, "--release_motor"];
             break;
@@ -269,7 +277,7 @@ function cleanupAfterUnexpectedShutdown() {
     scriptExecution.stdout.on('data', (data) => {
         let jsonObj = null;
         try {
-            jsonObj = JSON.parse(uint8arrayToString(data));
+            jsonObj = JSON.parse(_UTILS.uint8arrayToString(data));
         }
         catch (e) {
             console.error(e);
@@ -280,7 +288,7 @@ function cleanupAfterUnexpectedShutdown() {
 
     // Handle error output
     scriptExecution.stderr.on('data', (data) => {
-        console.error(uint8arrayToString(data)); //convert the Uint8Array to a readable string
+        console.error(_UTILS.uint8arrayToString(data)); //convert the Uint8Array to a readable string
 
         // Allow time for script to try and shutdown
         // Then kill the child process in case it is hanging

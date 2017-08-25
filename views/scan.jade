@@ -65,5 +65,5 @@ block content
               select.form-control.input-lg(id="select_SampleRate", name="input_SampleRate")
           button.btn.btn-primary.btn-lg(id="btn_PerformScan", type="button") Start Scan
 block scripts
-    script(src='/javascript/utils.js')
-    script(src='/javascript/pages/scan.js')
+  include scanner_lib_scripts
+  script(src='/javascript/pages/scan.js')

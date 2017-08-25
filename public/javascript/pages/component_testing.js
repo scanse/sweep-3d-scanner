@@ -2,7 +2,13 @@
  * Manages client side logic for the component testing page
  */
 
-let bExpectingFurtherUpdates = true;
+// Module includes
+const _UTILS = ScannerLib.Utils;
+const _SETTINGS = ScannerLib.Settings;
+const _REQUESTS = ScannerLib.Requests;
+
+// Constants
+const updateInterval_MS = 300;
 
 $(document).ready(function () {
     init();
@@ -15,112 +21,79 @@ function init() {
 
 // Initialize the test form, by populating all the input fields with appropriate options
 function initTestForm() {
-    initTestTypeDropdown();
-    $("#btn_PerformTest").click(requestTest);
-}
+    //initializes the selectable options for the test type select dropdown
+    _UTILS.initDropdownForEnum('select_TestType', _SETTINGS.TEST_TYPE_ENUM);
 
-//initializes the selectable options for the test type select dropdown
-function initTestTypeDropdown() {
-    /* loop through the available test types and programmatically create an option for each */
-    let optionName, optionHTML;
-    for (let key in TestTypeEnum) {
-        //don't consider the properties key as a key
-        if (key === 'properties')
-            break;
-
-        //create a new button, and insert it into the dropdown
-        optionName = `option_ScanType_${key}`;
-        optionHTML = `  <option id="${optionName}" value="${key}"> 
-                            ${ TestTypeEnum.properties[TestTypeEnum[key]].displayName}
-                        </option>`
-        $("#select_TestType").append(optionHTML);
-    }
-}
-
-// Requests an update regarding scan progress
-function requestUpdate() {
-    $.ajax({
-        url: "/script_execution/request_update"
-    }).done(function (data) {
-        if (typeof data === 'undefined' || !data || data === null) {
-            setTimeout(requestUpdate, 300);
-            return;
-        }
-
-        let updateArray = null;
-        try {
-            updateArray = JSON.parse(data);
-        }
-        catch (e) {
-            console.log(e);
-            return;
-        }
-
-        let numUpdates = updateArray.length;
-        if (numUpdates <= 0) {
-            if (bExpectingFurtherUpdates)
-                setTimeout(requestUpdate, 300);
-            return;
-        }
-
-        let update;
-        for (let i = 0; i < numUpdates; i++) {
-            update = updateArray[i];
-            switch (update.status) {
-                case 'failed':
-                    $('#span_TestStatus').html("Test Failed...");
-                    showFailure(update.msg);
-                    break;
-                case 'instruction':
-                    $('#span_TestStatus').html(update.msg);
-                    setTimeout(requestUpdate, 300);
-                case 'progress':
-                    updateProgressReport(update.msg);
-                    setTimeout(requestUpdate, 300);
-                    break;
-                case 'setup':
-                    updateProgressReport(update.msg);
-                    setTimeout(requestUpdate, 300);
-                    break;
-                case 'complete':
-                    bExpectingFurtherUpdates = false;
-                    $('#span_TestStatus').html(update.msg);
-                    showSuccess(update.msg);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-    }).fail(function () {
-        console.log("Ajax request failed");
+    // Request that a test be initiated when button is pressed
+    $("#btn_PerformTest").click(function () {
+        let options = readSpecifiedTestOptions();
+        _REQUESTS.requestScriptExecution('test_request', options, onTestRequestResponse);
     });
+}
+
+function onReceivedUpdate(data) {
+    if (typeof data === 'undefined' || !data || data === null) {
+        waitAndRequestUpdate(updateInterval_MS);
+        return;
+    }
+
+    let updateArray = null;
+    try {
+        updateArray = JSON.parse(data);
+    }
+    catch (e) {
+        console.log(e);
+        return;
+    }
+
+    let numUpdates = updateArray.length;
+    let update;
+    for (let i = 0; i < numUpdates; i++) {
+        update = updateArray[i];
+        switch (update.status) {
+            case 'failed':
+                $('#span_TestStatus').html("Test Failed...");
+                showFailure(update.msg);
+                return;     // return early, DON'T REQUEST UPDATE
+            case 'instruction':
+                $('#span_TestStatus').html(update.msg);
+                updateProgressReport(update.msg);
+                break;
+            case 'progress':
+                updateProgressReport(update.msg);
+                break;
+            case 'setup':
+                updateProgressReport(update.msg);
+                break;
+            case 'complete':
+                $('#span_TestStatus').html(update.msg);
+                showSuccess(update.msg);
+                return;     // return early, DON'T REQUEST UPDATE
+            default:
+                return;     // return early, DON'T REQUEST UPDATE
+        }
+    }
+    waitAndRequestUpdate(updateInterval_MS);
+}
+
+function waitAndRequestUpdate(waitTime_MS) {
+    setTimeout(function () {
+        // Requests an update regarding scan progress
+        _REQUESTS.requestUpdate(onReceivedUpdate);
+    }, waitTime_MS);
 }
 
 // Request that a test be initiated
-function requestTest() {
-    let options = readSpecifiedTestOptions();
-    $.ajax({
-        url: "/script_execution/request_script_execution",
-        data: {
-            type: 'test_request',
-            params: options
-        },
-        dataType: "json"
-    }).done(function (data) {
-        console.log(data);
-        if (data.bSumittedRequest) {
-            //let testDisplayName = TestTypeEnum.properties[data.params.test].displayName;
-            //showWarning(`Not yet implemented... but would be performing test: ${testDisplayName}`);
-            bExpectingFurtherUpdates = true;
-            showTestProgress();
-            requestUpdate();
-        }
-        else
-            showFailure(data.errorMsg);
-    }).fail(function () {
-        console.log("Ajax request failed");
-    });
+function onTestRequestResponse(data) {
+    console.log(data);
+    if (data.bSumittedRequest) {
+        //let testDisplayName = _SETTINGS.TEST_TYPE_ENUM.properties[data.params.test].displayName;
+        //showWarning(`Not yet implemented... but would be performing test: ${testDisplayName}`);
+        showTestProgress();
+        waitAndRequestUpdate(0);
+    }
+    else
+        showFailure(data.errorMsg);
 }
 
 // Read the currently selected test options from the form
@@ -128,7 +101,7 @@ function readSpecifiedTestOptions() {
     let options = {};
 
     let selectedKey = $('#select_TestType').find(":selected").val();
-    options.test = TestTypeEnum[selectedKey];
+    options.test = _SETTINGS.TEST_TYPE_ENUM[selectedKey];
 
     return options;
 }
