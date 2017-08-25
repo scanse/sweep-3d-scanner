@@ -1,11 +1,10 @@
 """Defines entites relevant to the exportation of scans"""
-import sweeppy
+import argparse
 import time
 import datetime
 import csv
 import os.path
 import scan_utils
-import numpy as np
 
 
 class ScanExporter(object):
@@ -46,21 +45,24 @@ class ScanExporter(object):
         # Write the header to the CSV
         self.writer.writeheader()
 
-    def export_2D_scan(self, scan, scan_index, mount_angle, base_angle_1, base_angle_2, CCW):
+    def export_2D_scan(self, scan, scan_index, angle_between_sweeps, mount_angle, CCW):
         """Exports the scan to the file
         :param scan:
         :param scan_index:
         :param mount_angle:
-        :param base_angle_1: base angle before move
-        :param base_angle_2: base angle after move
+        :param angle_between_sweeps
         :param CCW: True if base rotates CCW during scan
         """
+        if not CCW:
+            angle_between_sweeps = -angle_between_sweeps
+
+        # Base angle before base rotation
+        base_angle_1 = scan_index * angle_between_sweeps
+        # Base angle after base rotation
+        base_angle_2 = (scan_index + 1) * angle_between_sweeps
 
         converted_coords = scan_utils.transform_scan(
-            scan,
-            mount_angle,
-            base_angle_1 if CCW else -base_angle_1,
-            base_angle_2 if CCW else -base_angle_2)
+            scan, mount_angle, base_angle_1, base_angle_2)
 
         for n, sample in enumerate(scan.samples):
             self.writer.writerow({
@@ -80,8 +82,12 @@ class ScanExporter(object):
         return self.file_name
 
 
-def main():
+def main(arg_dict):
     """Creates a ScanExporter and exports a dummy scan"""
+    if arg_dict['use_dummy'] is True:
+        import dummy_sweeppy as sweeppy
+    else:
+        import sweeppy
 
     exporter = ScanExporter()
 
@@ -101,4 +107,15 @@ def main():
         index = index + 1
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Scan Exporter Testing')
+    parser.add_argument('-d', '--use_dummy',
+                        help='Use the dummy verison without hardware',
+                        default=False,
+                        action='store_true',
+                        required=False)
+
+    args = parser.parse_args()
+    argsdict = vars(args)
+
+    main(argsdict)

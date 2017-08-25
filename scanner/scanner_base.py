@@ -3,9 +3,7 @@ import time
 import atexit
 import itertools
 import argparse
-import sys
-import json
-
+from scanner_output import output_json_message
 
 class ScannerBase(object):
     """The base of the 3d scanner (controls rotation via stepper motor).
@@ -114,18 +112,6 @@ class ScannerBase(object):
         self.motor_hat.getMotor(2).run(self.Adafruit_MotorHAT.RELEASE)
         self.motor_hat.getMotor(3).run(self.Adafruit_MotorHAT.RELEASE)
         self.motor_hat.getMotor(4).run(self.Adafruit_MotorHAT.RELEASE)
-
-
-def output_message(message):
-    """Print the provided input & flush stdout so parent process registers the message"""
-    print message
-    sys.stdout.flush()
-
-
-def output_json_message(json_input):
-    """Print the provided json & flush stdout so parent process registers the message"""
-    serialized_json = json.dumps(json_input, separators=(',', ':'))
-    output_message(serialized_json)
 
 
 def test_demo(use_dummy=False):

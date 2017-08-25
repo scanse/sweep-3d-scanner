@@ -2,9 +2,8 @@
 import time
 import atexit
 import itertools
-import sys
-import json
 import argparse
+from scanner_output import output_json_message
 
 
 class LimitSwitch(object):
@@ -86,18 +85,6 @@ class LimitSwitch(object):
     def destroy(self):
         """Disable functionality.. useful on shutdown!"""
         self.unsubscribe()
-
-
-def output_message(message):
-    """Print the provided input & flush stdout so parent process registers the message"""
-    print message
-    sys.stdout.flush()
-
-
-def output_json_message(json_input):
-    """Print the provided json & flush stdout so parent process registers the message"""
-    serialized_json = json.dumps(json_input, separators=(',', ':'))
-    output_message(serialized_json)
 
 
 def test_demo(use_dummy=False):

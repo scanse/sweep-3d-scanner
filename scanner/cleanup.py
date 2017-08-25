@@ -1,9 +1,8 @@
 """Helpful cleanup methods for the scanner"""
-import sweep_constants
 import argparse
-import sys
-import json
 import time
+import sweep_constants
+from scanner_output import output_json_message
 
 
 def idle_sweep(use_dummy=False):
@@ -34,18 +33,6 @@ def release_motors(use_dummy=False):
     output_json_message(
         {'type': "update", 'status': "progress", 'msg': "Released Stepper Motors!"})
     time.sleep(0.1)
-
-
-def output_message(message):
-    """Print the provided input & flush stdout so parent process registers the message"""
-    print message
-    sys.stdout.flush()
-
-
-def output_json_message(json_input):
-    """Print the provided json & flush stdout so parent process registers the message"""
-    serialized_json = json.dumps(json_input, separators=(',', ':'))
-    output_message(serialized_json)
 
 
 def main(arg_dict):

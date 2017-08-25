@@ -1,18 +1,15 @@
 """Defines a 3D scanner"""
+import argparse
+import time
+import datetime
+import math
+import threading
 import sweep_constants
 import scan_settings
 import scan_exporter
 import scan_utils
 import scanner_base
-import time
-import datetime
-import math
-import atexit
-import sys
-import argparse
-import json
-import threading
-import thread
+from scanner_output import output_json_message
 
 
 class Scanner(object):
@@ -32,9 +29,9 @@ class Scanner(object):
         :param exporter: the scan exporter
         """
         if device is None:
-            self.shutdown("Please provide a device to scanner constructor.")
+            self.shutdown()
         if base is None:
-            self.shutdown("Please provide a base to scanner constructor.")
+            self.shutdown()
         if settings is None:
             settings = scan_settings.ScanSettings()
         if exporter is None:
@@ -93,73 +90,26 @@ class Scanner(object):
         # setup the base
         self.setup_base()
 
-    def idle(self):
-        """Stops the device from spinning"""
-        self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
-
-    def check_get_scan_timeout(self):
-        """Checks if we have received a scan from getScan... if not, exit"""
-        if not self.received_scan:
-            self.base.turn_off_motors()
-            raise ValueError("getScan() never returned... aborting")
-            # Should work out a better solution to shutdown.
-            # Signaling with KeyboardInterrupt doesn't seem to work and process still hangs
-            # Currently the workaround is that the node app will kill this
-            # process if it receives an error
-
     def perform_scan(self):
-        """Performs a complete 3d scan
-        :param angular_range: the angular range for the base to cover during the scan (default 180)
-        """
-        # Calcualte the # of evenly spaced 2D sweeps (base movements) required
-        # to match resolutions
-        num_sweeps = int(round(self.settings.get_resolution()
-                               * self.settings.get_scan_range()))
+        """Performs a 3d scan"""
+        # Calcualte some intermediate values
+        num_sweeps, angle_between_sweeps, steps_per_move = self.calculate_scan_variables()
 
-        # Caclulate the number of stepper steps covering the angular range
-        num_stepper_steps = self.settings.get_scan_range() * self.base.get_steps_per_deg()
-
-        # Calculate number of stepper steps per move (ie: between scans)
-        num_stepper_steps_per_move = int(round(num_stepper_steps / num_sweeps))
-
-        # Actual angle per move (between individual 2D scans)
-        angle_between_sweeps = 1.0 * num_stepper_steps_per_move / \
-            self.base.get_steps_per_deg()
-
-        # correct the num_sweeps to account for the accumulated difference due
-        # to rounding
-        num_sweeps = math.floor(
-            1.0 * self.settings.get_scan_range() / angle_between_sweeps)
-
-        # add 2 to account for gap from splitting each scan
-        num_sweeps = num_sweeps + 2
-
-        output_json_message({
-            'type': "update",
-            'status': "scan",
-            'msg': "Initiating scan...",
-            'duration': num_sweeps / self.settings.get_motor_speed(),
-            'remaining': num_sweeps / self.settings.get_motor_speed()
-        })
-
-        # Start Scanning
+        # Report that the scan is initiating, and start scanning
+        self.report_scan_initiated(num_sweeps)
         self.device.start_scanning()
 
-        # put a 3 second timeout on the get_scans() method in case it gets hung
-        # up
+        # put a 3 second timeout on the get_scans() method in case it hangs
         time_out_thread = threading.Timer(3, self.check_get_scan_timeout)
         time_out_thread.start()
 
         valid_scan_index = 0
-        arrival_time = 0
-        time_until_deadzone = 0
         rotated_already = False
 
-        # get_scans is coroutine-based generator lazily returning scans ad
-        # infinitum
+        # get_scans is coroutine-based generator returning scans ad infinitum
         for scan_count, scan in enumerate(self.device.get_scans()):
             # note the arrival time
-            arrival_time = time.time()
+            scan_arrival_time = time.time()
 
             # note that a scan was received (used to avoid the timeout)
             self.received_scan = True
@@ -177,7 +127,7 @@ class Scanner(object):
                 scan_utils.remove_angular_window(
                     scan, self.settings.get_deadzone(), 361)
 
-            # Catch scans that contain unordered samples, and discard them
+            # Catch scans that contain unordered samples and discard them
             # (this may indicate problem reading sync byte)
             if scan_utils.contains_unordered_samples(scan):
                 continue
@@ -185,90 +135,116 @@ class Scanner(object):
             # Edge case (discard 1st scan without base movement and move base)
             if not rotated_already:
                 # Wait for the device to reach the threshold angle for movement
-                time_until_deadzone = self.settings.get_time_to_deadzone_sec() - \
-                    (time.time() - arrival_time)
-                if time_until_deadzone > 0:
-                    time.sleep(time_until_deadzone)
+                self.wait_until_deadzone(scan_arrival_time)
 
-                # Move the base
-                self.base.move_steps(num_stepper_steps_per_move)
+                # Move the base and start again
+                self.base.move_steps(steps_per_move)
                 rotated_already = True
                 continue
 
             # Export the scan
             self.exporter.export_2D_scan(
-                scan,
-                valid_scan_index,
-                self.settings.get_mount_angle(),
-                # base angle before move
-                angle_between_sweeps * valid_scan_index,
-                # base angle after move
-                angle_between_sweeps * (valid_scan_index + 1),
-                False
-            )
+                scan, valid_scan_index, angle_between_sweeps,
+                self.settings.get_mount_angle(), False)
 
             # increment the scan index
             valid_scan_index = valid_scan_index + 1
 
             # Wait for the device to reach the threshold angle for movement
-            time_until_deadzone = self.settings.get_time_to_deadzone_sec() - \
-                (time.time() - arrival_time)
-            if time_until_deadzone > 0:
-                time.sleep(time_until_deadzone)
+            self.wait_until_deadzone(scan_arrival_time)
 
-            # Move the base
-            self.base.move_steps(num_stepper_steps_per_move)
+            # Move the base and report progress
+            self.base.move_steps(steps_per_move)
+            self.report_scan_progress(num_sweeps, valid_scan_index)
 
-            output_json_message({
-                'type': "update",
-                'status': "scan",
-                'msg': "Scan in Progress...",
-                'duration': num_sweeps / self.settings.get_motor_speed(),
-                'remaining': (num_sweeps - valid_scan_index) / self.settings.get_motor_speed()
-            })
-
-            # Collect the appropriate number of 2D scans
+            # Exit after collecting the required number of 2D scans
             if valid_scan_index >= num_sweeps:
                 break
 
-        # Stop scanning
+        # Stop scanning and report completion
         self.device.stop_scanning()
+        self.report_scan_complete()
 
+    def idle(self):
+        """Stops the device from spinning"""
+        self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
+
+    def calculate_scan_variables(self):
+        """ Calculates and returns intermediate variables necessary to perform a scan """
+        # Calcualte the # of evenly spaced 2D sweeps (base movements) required
+        # to match resolutions
+        num_sweeps = int(round(self.settings.get_resolution()
+                               * self.settings.get_scan_range()))
+
+        # Caclulate the number of stepper steps covering the angular range
+        num_stepper_steps = self.settings.get_scan_range() * self.base.get_steps_per_deg()
+
+        # Calculate number of stepper steps per move (ie: between scans)
+        num_stepper_steps_per_move = int(round(num_stepper_steps / num_sweeps))
+
+        # Actual angle per move (between individual 2D scans)
+        angle_between_sweeps = 1.0 * num_stepper_steps_per_move / \
+            self.base.get_steps_per_deg()
+
+        # Correct the num_sweeps...
+        # Account for the accumulated difference due to rounding
+        num_sweeps = math.floor(
+            1.0 * self.settings.get_scan_range() / angle_between_sweeps)
+        # Account for gap introduced from splitting each scan
+        num_sweeps = num_sweeps + 2
+
+        return (num_sweeps, angle_between_sweeps, num_stepper_steps_per_move)
+
+    def check_get_scan_timeout(self):
+        """Checks if we have received a scan from getScan... if not, exit"""
+        if not self.received_scan:
+            self.base.turn_off_motors()
+            raise ValueError("getScan() never returned... aborting")
+            # Should work out a better solution to shutdown.
+            # Signaling with KeyboardInterrupt doesn't seem to work and process still hangs
+            # Currently the workaround is that the node app will kill this
+            # process if it receives an error
+
+    def wait_until_deadzone(self, t_0):
+        """ Waits the however long is required to reach the deadzone
+        :param t_0: The time the sweep crossed the 0 degree mark
+        """
+        time_until_deadzone = self.settings.get_time_to_deadzone_sec() - \
+            (time.time() - t_0)
+        if time_until_deadzone > 0:
+            time.sleep(time_until_deadzone)
+
+    def report_scan_initiated(self, num_sweeps):
+        """ Reports that a scan has been initiated """
+        output_json_message({
+            'type': "update",
+            'status': "scan",
+            'msg': "Initiating scan...",
+            'duration': num_sweeps / self.settings.get_motor_speed(),
+            'remaining': num_sweeps / self.settings.get_motor_speed()
+        })
+
+    def report_scan_progress(self, num_sweeps, valid_scan_index):
+        """ Reports the progress of a scan """
+        output_json_message({
+            'type': "update",
+            'status': "scan",
+            'msg': "Scan in Progress...",
+            'duration': num_sweeps / self.settings.get_motor_speed(),
+            'remaining': (num_sweeps - valid_scan_index) / self.settings.get_motor_speed()
+        })
+
+    def report_scan_complete(self):
+        """ Reports the completion of a scan """
         output_json_message({
             'type': "update",
             'status': "complete",
             'msg': "Finished scan!"
         })
 
-    def shutdown(self, msg=None):
+    def shutdown(self):
         """Print message and shutdown"""
         exit()
-
-    def get_base(self):
-        """Returns the ScannerBase object for this scanner"""
-        return self.base
-
-    def get_settings(self):
-        """Returns the scan settings for this scanner"""
-        return self.settings
-
-    def set_settings(self, settings=None):
-        """Sets the scan settings for this scanner to the provided ScanSettings object"""
-        if settings is None:
-            settings = scan_settings.ScanSettings()
-        self.settings = settings
-
-
-def output_message(message):
-    """Print the provided input & flush stdout so parent process registers the message"""
-    print message
-    sys.stdout.flush()
-
-
-def output_json_message(json_input):
-    """Print the provided json & flush stdout so parent process registers the message"""
-    serialized_json = json.dumps(json_input, separators=(',', ':'))
-    output_message(serialized_json)
 
 
 def main(arg_dict):
@@ -329,7 +305,7 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('-ma', '--mount_angle',
                         help='Mount angle of device relative to horizontal',
-                        default=-90,
+                        default=90,
                         required=False)
     parser.add_argument('-dz', '--dead_zone',
                         help='Starting angle of deadzone',

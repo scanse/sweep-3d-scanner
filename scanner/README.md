@@ -41,7 +41,8 @@ custom_params = ScanSettings(
     sweep_constants.SAMPLE_RATE_750_HZ,     # desired sample rate setting
     120,                                    # desired deadzone angle threshold
     180,                                    # desired range of movement
-    -90)                                    # mount angle of device relative to horizontal plane
+    90                                      # mount angle of device relative to horizontal plane
+)
 ```
 
 ## scanner_base

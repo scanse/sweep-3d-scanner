@@ -1,5 +1,5 @@
 """Defines utility methods related to 3D scans"""
-import sweeppy
+import argparse
 import numpy as np
 import transformations as tf
 
@@ -80,7 +80,8 @@ def get_scan_rotation_matrix(mount_angle, base_angle):
     :param base_angle:
     """
     alpha = 0                       # rotation about y (roll)
-    beta = np.deg2rad(mount_angle)  # rotation about x (pitch, mount_angle)
+    # negate mount_angle
+    beta = np.deg2rad(-mount_angle)  # rotation about x (pitch, mount_angle)
     gamma = np.deg2rad(base_angle)  # rotation about z (yaw, base_angle)
     return tf.euler_matrix(alpha, beta, gamma, 'sxyz')
 
@@ -110,8 +111,12 @@ def contains_unordered_samples(scan):
     return False
 
 
-def main():
+def main(arg_dict):
     """Main method"""
+    if arg_dict['use_dummy'] is True:
+        import dummy_sweeppy as sweeppy
+    else:
+        import sweeppy
 
     dummy_samples = [sweeppy.Sample(angle=1000 * 30 * n, distance=10, signal_strength=199)
                      for n in range(6)]
@@ -132,4 +137,15 @@ def main():
     print converted_coords[2, 3]
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Scan Utils Testing')
+    parser.add_argument('-d', '--use_dummy',
+                        help='Use the dummy verison without hardware',
+                        default=False,
+                        action='store_true',
+                        required=False)
+
+    args = parser.parse_args()
+    argsdict = vars(args)
+
+    main(argsdict)
