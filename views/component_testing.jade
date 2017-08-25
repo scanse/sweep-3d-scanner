@@ -2,12 +2,12 @@ extends layout
 
 block content
   div(id="div_TestProgress", style="display: none;")
-    h1 Testing
+    h2 Testing
     h4
       span(id="span_TestStatus")
     hr
     div.alert.alert-info(id="alert_Info", role="alert")
-      pre(id="pre_TestDetails")
+      pre.scroll-overflow(id="pre_TestDetails")
 
   div(id="div_TestForm")
       h1 Component Testing

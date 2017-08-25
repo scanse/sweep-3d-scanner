@@ -1,34 +1,35 @@
 doctype html
-html
+html(lang="en")
   head
+    meta(name='viewport', content='width=device-width, initial-scale=1')
     title 3d-Scanner
     script(src='/lib/jquery/jquery-2.2.4.min.js')
     link(rel='stylesheet', href='/stylesheets/bootstrap-3.3.7-dist/css/bootstrap.min.css')
     link(rel='stylesheet', href='/stylesheets/bootstrap-3.3.7-dist/css/bootstrap-theme.min.css')
     link(rel='stylesheet', href='/stylesheets/scanner_style.css')
     script(src='/stylesheets/bootstrap-3.3.7-dist/js/bootstrap.min.js')
+  
   body
-
     nav.navbar.navbar-default.navbar-fixed-top
-      div.container
-        div.navbar-header
-          div.navbar-brand
-            Sweep 3D Scanner v 0.4.1
-        ul.nav.navbar-nav
-          li
-            a(href="/" role="button")
-              span.glyphicon.glyphicon-home
-        div.collapse.navbar-collapse
+      .container
+        .navbar-header
+          button.navbar-toggle.collapsed(type='button', data-toggle='collapse', data-target='#navbar', aria-expanded='false', aria-controls='navbar')
+            span.sr-only Toggle navigation
+            span.icon-bar
+            span.icon-bar
+            span.icon-bar
+          a.navbar-brand(href='/')
+                span.glyphicon.glyphicon-home
+          a.navbar-brand Sweep 3D v0.4.1
+        #navbar.navbar-collapse.collapse
           ul.nav.navbar-nav.navbar-right
             li
-              a(href="http://community.scanse.io/c/3d-scanner" target="_blank") Community Forum
+              a(href='http://community.scanse.io/c/3d-scanner' target="_blank") Community Forum
             li
-              a(href="https://github.com/scanse/sweep-3d-scanner" target="_blank") Github Repo
+              a(href='https://github.com/scanse/sweep-3d-scanner' target="_blank") Github Repo
 
     div.container
       div.col-md-8.col-md-push-2
         block content
-
-
 
     block scripts

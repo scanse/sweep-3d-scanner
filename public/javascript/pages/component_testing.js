@@ -2,6 +2,8 @@
  * Manages client side logic for the component testing page
  */
 
+let bExpectingFurtherUpdates = true;
+
 $(document).ready(function () {
     init();
 });
@@ -56,7 +58,8 @@ function requestUpdate() {
 
         let numUpdates = updateArray.length;
         if (numUpdates <= 0) {
-            setTimeout(requestUpdate, 300);
+            if (bExpectingFurtherUpdates)
+                setTimeout(requestUpdate, 300);
             return;
         }
 
@@ -80,6 +83,7 @@ function requestUpdate() {
                     setTimeout(requestUpdate, 300);
                     break;
                 case 'complete':
+                    bExpectingFurtherUpdates = false;
                     $('#span_TestStatus').html(update.msg);
                     showSuccess(update.msg);
                     break;
@@ -108,6 +112,7 @@ function requestTest() {
         if (data.bSumittedRequest) {
             //let testDisplayName = TestTypeEnum.properties[data.params.test].displayName;
             //showWarning(`Not yet implemented... but would be performing test: ${testDisplayName}`);
+            bExpectingFurtherUpdates = true;
             showTestProgress();
             requestUpdate();
         }
@@ -172,4 +177,5 @@ function showSuccess(msg) {
 
 function updateProgressReport(msg) {
     $("#pre_TestDetails").append(msg + "\n");
+    $("#pre_TestDetails").scrollTop($("#pre_TestDetails")[0].scrollHeight);
 }

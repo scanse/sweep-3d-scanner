@@ -48,5 +48,12 @@ html {
   min-height: 100%;
 }
 body {
-  padding-top: 100px;
+  padding-top: 50px;
+}
+
+
+/* Scrollable elements that shouldn't exceed 50% of viewport height */
+.scroll-overflow {
+  max-height:50vh;
+  overflow-y:scroll;
 }

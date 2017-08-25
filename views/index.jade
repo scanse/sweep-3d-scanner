@@ -1,8 +1,10 @@
 extends layout
 
 block content
-  h1 Home
-  p Choose an option to get started. Remember to always shutdown the rPi before disconnecting power.
+  h2 Home
+  p Choose an option to get started.
+    br
+    small.bg-warning Always shutdown the Pi before disconnecting power.
   hr
   a.btn.btn-primary.homebtn(href="/scan" role="button")
     span.glyphicon.glyphicon-record
@@ -15,7 +17,7 @@ block content
     p Component Testing
   a.btn.btn-warning.homebtn(href="/request_reboot" role="button")
     span.glyphicon.glyphicon-refresh
-    p Restart Raspberry Pi
+    p Restart Pi
   a.btn.btn-danger.homebtn(href="/request_shutdown" role="button")
     span.glyphicon.glyphicon-off
-    p Shutdown Raspberry Pi
+    p Shutdown Pi

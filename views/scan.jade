@@ -2,7 +2,7 @@ extends layout
 
 block content
   div(id="div_ScanProgress", style="display: none;")
-    h1 Scanning
+    h2 Scanning
     h4
       span(id="span_ScanStatus")
     hr
@@ -34,7 +34,7 @@ block content
       p Cancel Scan
 
   div(id="div_ScanResults", style="display: none;")
-      h1 Results
+      h2 Results
       h4
         span(id="span_ScanResult")
       hr
@@ -47,10 +47,8 @@ block content
           span File Manager
 
   div(id="div_ScanForm")
-      h1 Settings
-      p Specify a filename. Then press the 
-        strong Start Scan 
-        | button to perform a scan with the selected settings.
+      h2 Settings
+      p Select desired scan settings.
       hr
       form
         div.form-group
