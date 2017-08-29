@@ -37,8 +37,8 @@ with Sweep('/dev/ttyUSB0') as sweep:
 default_params = ScanSettings()
 # Create a ScanSettings obj with specific settings
 custom_params = ScanSettings(
-    sweep_constants.MOTOR_SPEED_2_HZ,       # desired motor speed setting
-    sweep_constants.SAMPLE_RATE_750_HZ,     # desired sample rate setting
+    sweep_helpers.MOTOR_SPEED_2_HZ,       # desired motor speed setting
+    sweep_helpers.SAMPLE_RATE_750_HZ,     # desired sample rate setting
     120,                                    # desired deadzone angle threshold
     180,                                    # desired range of movement
     90                                      # mount angle of device relative to horizontal plane
@@ -81,9 +81,9 @@ for base_angle in range(0, 11):
     index = index + 1
 ```
 
-## sweep_constants
+## sweep_helpers
 
-`sweep_constants` module defines constants for the sweep device.
+`sweep_helpers` module defines constants for the sweep device.
 
 ## cleanup
 `cleanup.py` is a simple script to cleanup any residual issues when testing scripts that fail. You can call with individual flags, or with multiple:

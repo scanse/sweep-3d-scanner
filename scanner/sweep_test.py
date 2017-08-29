@@ -1,20 +1,21 @@
 """Tests the sweep's basic functions"""
 import time
 import argparse
-import sweep_constants
+import sweep_helpers
 from scanner_output import output_json_message
 
 
 def main(arg_dict):
     """Tests the sweep's basic functions"""
 
-    # import the appropriate modules
-    if arg_dict['use_dummy']:
-        from dummy_sweeppy import Sweep
-    else:
-        from sweeppy import Sweep
+    use_dummy = arg_dict['use_dummy']
+    with sweep_helpers.create_sweep_w_error('/dev/ttyUSB0', use_dummy) as (sweep, err):
+        if err:
+            output_json_message(
+                {'type': "update", 'status': "failed", 'msg': err})
+            time.sleep(0.1)
+            return
 
-    with Sweep('/dev/ttyUSB0') as sweep:
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Testing motor ready."})
 
@@ -24,13 +25,13 @@ def main(arg_dict):
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Adjusting sample rate."})
 
-        sweep.set_sample_rate(sweep_constants.SAMPLE_RATE_500_HZ)
+        sweep.set_sample_rate(sweep_helpers.SAMPLE_RATE_500_HZ)
 
         time.sleep(0.1)
         output_json_message(
             {'type': "update", 'status': "setup", 'msg': "Adjusting motor speed."})
 
-        sweep.set_motor_speed(sweep_constants.MOTOR_SPEED_5_HZ)
+        sweep.set_motor_speed(sweep_helpers.MOTOR_SPEED_5_HZ)
 
         time.sleep(0.1)
         output_json_message(

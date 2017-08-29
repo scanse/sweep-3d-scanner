@@ -1,8 +1,7 @@
 """Dummy implementation of sweeppy library methods/classes"""
 import collections
 import time
-import sweep_constants
-
+import sweep_helpers
 
 
 class Scan(collections.namedtuple('Scan', 'samples')):
@@ -14,12 +13,13 @@ class Sample(collections.namedtuple('Sample', 'angle distance signal_strength'))
     """A single sensor reading, comprised of an angle, distance and signal strength"""
     pass
 
+
 class Sweep(object):
     """ Dummy implementation of Sweep """
 
     def __init__(self, port, bitrate=None):
-        self.motor_speed = sweep_constants.MOTOR_SPEED_1_HZ
-        self.sample_rate = sweep_constants.SAMPLE_RATE_500_HZ
+        self.motor_speed = sweep_helpers.MOTOR_SPEED_1_HZ
+        self.sample_rate = sweep_helpers.SAMPLE_RATE_500_HZ
 
     def __enter__(self):
         return self

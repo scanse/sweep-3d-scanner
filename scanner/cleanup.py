@@ -1,20 +1,19 @@
 """Helpful cleanup methods for the scanner"""
 import argparse
 import time
-import sweep_constants
+import sweep_helpers
 from scanner_output import output_json_message
 
 
 def idle_sweep(use_dummy=False):
     """Stops any active stream and sets the sweep to idle"""
-    if not use_dummy:
-        from sweeppy import Sweep
-    else:
-        from dummy_sweeppy import Sweep
-
-    # device construction involves stopping any active data streams
-    with Sweep('/dev/ttyUSB0') as sweep:
-        sweep.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
+    with sweep_helpers.create_sweep_w_error('/dev/ttyUSB0', use_dummy) as (sweep, err):
+        if err:
+            output_json_message(
+                {'type': "update", 'status': "failed", 'msg': err})
+            time.sleep(0.1)
+            return
+        sweep.set_motor_speed(sweep_helpers.MOTOR_SPEED_0_HZ)
         output_json_message(
             {'type': "update", 'status': "progress", 'msg': "Set sweep to idle!"})
         time.sleep(0.1)

@@ -1,5 +1,5 @@
 """Holds parameters and settings for 3D the scanner."""
-import sweep_constants
+import sweep_helpers
 
 
 class ScanSettings(object):
@@ -24,9 +24,9 @@ class ScanSettings(object):
         :param mount_angle: Mount angle of the device relative to horizontal plane (defaults 90deg)
         """
         if motor_speed is None:
-            motor_speed = sweep_constants.MOTOR_SPEED_1_HZ
+            motor_speed = sweep_helpers.MOTOR_SPEED_1_HZ
         if sample_rate is None:
-            sample_rate = sweep_constants.SAMPLE_RATE_500_HZ
+            sample_rate = sweep_helpers.SAMPLE_RATE_500_HZ
         if deadzone is None:
             deadzone = 135
         if scan_range is None:
@@ -46,7 +46,7 @@ class ScanSettings(object):
         :param motor_speed: an integer value between 1:10 representing motor speed in HZ
         """
         if motor_speed is None:
-            motor_speed = sweep_constants.MOTOR_SPEED_1_HZ
+            motor_speed = sweep_helpers.MOTOR_SPEED_1_HZ
         self.motor_speed = motor_speed
 
     def set_sample_rate(self, sample_rate=None):
@@ -54,7 +54,7 @@ class ScanSettings(object):
         :param sample_rate: an integer value (500, 750 or 1000), representing a sample rate in HZ
         """
         if sample_rate is None:
-            sample_rate = sweep_constants.SAMPLE_RATE_500_HZ
+            sample_rate = sweep_helpers.SAMPLE_RATE_500_HZ
         self.sample_rate = sample_rate
 
     def set_deadzone(self, deadzone=None):
@@ -146,8 +146,8 @@ def main():
     default_params = ScanSettings()
     # Create a ScanSettings obj with specific settings
     custom_params = ScanSettings(
-        sweep_constants.MOTOR_SPEED_2_HZ,       # desired motor speed setting
-        sweep_constants.SAMPLE_RATE_750_HZ,     # desired sample rate setting
+        sweep_helpers.MOTOR_SPEED_2_HZ,       # desired motor speed setting
+        sweep_helpers.SAMPLE_RATE_750_HZ,     # desired sample rate setting
         135,                                    # desired deadzone angle threshold
         180,                                    # desired range of movement
         90)                                    # mount angle of device relative to horizontal plane

@@ -4,7 +4,7 @@ import time
 import datetime
 import math
 import threading
-import sweep_constants
+import sweep_helpers
 import scan_settings
 import scan_exporter
 import scan_utils
@@ -167,7 +167,7 @@ class Scanner(object):
 
     def idle(self):
         """Stops the device from spinning"""
-        self.device.set_motor_speed(sweep_constants.MOTOR_SPEED_0_HZ)
+        self.device.set_motor_speed(sweep_helpers.MOTOR_SPEED_0_HZ)
 
     def calculate_scan_variables(self):
         """ Calculates and returns intermediate variables necessary to perform a scan """
@@ -262,17 +262,18 @@ def main(arg_dict):
     # Create an exporter
     exporter = scan_exporter.ScanExporter(file_name=arg_dict['output'])
 
-    # import the appropriate modules
-    if arg_dict['use_dummy']:
-        from dummy_sweeppy import Sweep
-    else:
-        from sweeppy import Sweep
+    use_dummy = arg_dict['use_dummy']
 
     # Create a scanner base
-    base = scanner_base.ScannerBase(use_dummy=arg_dict['use_dummy'])
+    base = scanner_base.ScannerBase(use_dummy=use_dummy)
 
     # Create sweep sensor, and perform scan
-    with Sweep('/dev/ttyUSB0') as sweep:
+    with sweep_helpers.create_sweep_w_error('/dev/ttyUSB0', use_dummy) as (sweep, err):
+        if err:
+            output_json_message(
+                {'type': "update", 'status': "failed", 'msg': "Failed to connect to sweep device... make sure it is plugged in."})
+            time.sleep(0.1)
+            return
         # Create a scanner object
         time.sleep(1.0)
         scanner = Scanner(
@@ -293,11 +294,11 @@ if __name__ == '__main__':
         description='Creates a 3D scanner and performs a scan')
     parser.add_argument('-ms', '--motor_speed',
                         help='Motor Speed (integer from 1:10)',
-                        default=sweep_constants.MOTOR_SPEED_1_HZ,
+                        default=sweep_helpers.MOTOR_SPEED_1_HZ,
                         required=False)
     parser.add_argument('-sr', '--sample_rate',
                         help='Sample Rate(either 500, 750 or 1000)',
-                        default=sweep_constants.SAMPLE_RATE_500_HZ,
+                        default=sweep_helpers.SAMPLE_RATE_500_HZ,
                         required=False)
     parser.add_argument('-ar', '--angular_range',
                         help='Angular range of scan (integer from 1:180)',

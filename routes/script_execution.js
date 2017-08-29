@@ -187,8 +187,14 @@ function executeScript(args) {
         updateQueue.push(jsonObj);
 
         // If the update indicates a failure
-        if (jsonObj.status === 'failed')
+        if (jsonObj.status === 'failed') {
             guaranteeShutdown();
+
+            // clear the array of updates
+            updateQueue = [];
+            // repush the current failure message
+            updateQueue.push(jsonObj);
+        }
     });
 
     // Handle error output
