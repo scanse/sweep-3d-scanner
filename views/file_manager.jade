@@ -10,15 +10,32 @@ block content
         small.bg-danger Press the red button to delete it from the rPi.
     hr
 
-    label Select File
-    form.form-inline
+    form.form-vertical(id="form_FileManager")
+        label.control-label Downloaded File Format:
         div.form-group
+            label.radio-inline
+                input(type='radio', name='format_radio', value='csv', checked)
+                | CSV
+            label.radio-inline
+                input(type='radio', name='format_radio', value='ply')
+                |  PLY
+            label.radio-inline
+                input(type='radio', name='format_radio', value='ply_binary')
+                |  PLY (binary)
+            label.radio-inline
+                input(type='radio', name='format_radio', value='xyz')
+                |  XYZ
+        div.form-group
+            label.control-label Select File:
             select.form-control.input-lg(id="select_FileName")
         div.form-group
-            button.btn-lg.btn.btn-primary(id="btn_DownloadFile", type="button" name="submit" value="download")
-                span.glyphicon.glyphicon-download
-            button.btn-lg.btn.btn-danger(id="btn_DeleteFile", type="button" name="submit" value="delete")
-                span.glyphicon.glyphicon-trash
+            div.btn-group.btn-group-justified
+                div.btn-group
+                    button.btn-lg.btn.btn-primary(id="btn_DownloadFile", type="button" name="submit" value="download")
+                        span.glyphicon.glyphicon-download
+                div.btn-group
+                    button.btn-lg.btn.btn-danger(id="btn_DeleteFile", type="button" name="submit" value="delete")
+                        span.glyphicon.glyphicon-trash
     br
     div.alert.alert-success(id="alert_Success", role="alert", style="display: none;")
     div.alert.alert-warning(id="alert_Warning", role="alert", style="display: none;")

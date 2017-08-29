@@ -36,13 +36,16 @@ function populateFilesSelect(files) {
     }
 
     /* loop through the available files programmatically create an option for each */
-    let file, optionName, optionHTML;
+    let file, nameNoExt, optionName, optionHTML;
     for (let i = 0; i < files.length; i++) {
         file = files[i];
+        nameNoExt = file.substring(0, file.lastIndexOf('.csv'));
+        if (nameNoExt.length <= 0)
+            continue;
         //create a new button, and insert it into the dropdown
-        optionName = `option_File_${file}`;
+        optionName = `option_File_${nameNoExt}`;
         optionHTML = `  <option id="${optionName}" value="${file}"> 
-                            ${file}
+                            ${nameNoExt}
                         </option>`
         $("#select_FileName").append(optionHTML);
     }
@@ -83,11 +86,15 @@ function showSuccess(msg) {
 
 
 function downloadFile() {
+    // read desired format
+    //let format = 'ply';
+    let format = $("#form_FileManager input[type='radio']:checked").val();
     // read the filename from the select dropdown
     let filename = $('#select_FileName').find(":selected").val();
+
     // download the file with a dialog by opening a separate window
     if (filename.length > 0) {
-        window.open(`/file_manager/download_file/${filename}`);
+        window.open(`/file_manager/download_file/${format}/${filename}`);
     }
 }
 
