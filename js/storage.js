@@ -106,9 +106,6 @@ exports.deleteFile = function (filePath) {
 /****************************************************************************************
 * Private Methods
 ****************************************************************************************/
-
-
-
 // generate XYZ file from the specified CSV filepath
 // return the filepath if successfull, null otherwise
 let _generateXYZFile = function (csvPath) {
