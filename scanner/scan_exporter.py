@@ -19,8 +19,7 @@ class ScanExporter(object):
     output_dir = os.path.join(os.path.dirname(
         os.path.abspath(__file__)), '../output_scans')
     # Field names for the CSV
-    field_names = ['SCAN_INDEX', 'X', 'Y', 'Z',
-                   'SIGNAL_STRENGTH']
+    field_names = ['X', 'Y', 'Z', 'SIGNAL_STRENGTH']
 
     def __init__(self, file_name=None):
         """Return a ScanExporter object
@@ -66,7 +65,6 @@ class ScanExporter(object):
 
         for n, sample in enumerate(scan.samples):
             self.writer.writerow({
-                'SCAN_INDEX': scan_index,
                 'X': int(round(converted_coords[n, 0])),
                 'Y': int(round(converted_coords[n, 1])),
                 'Z': int(round(converted_coords[n, 2])),
@@ -100,9 +98,8 @@ def main(arg_dict):
         exporter.export_2D_scan(
             dummy_scan,
             index,
+            30,
             90,
-            base_angle_scalar * 30,         # angle before move
-            (base_angle_scalar + 1) * 30,   # angle after move
             False)
         index = index + 1
 

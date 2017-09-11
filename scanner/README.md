@@ -77,7 +77,7 @@ for base_angle in range(0, 11):
                         for n in range(11)]
     dummy_scan = sweeppy.Scan(samples=dummy_samples)
 
-    exporter.export_2D_scan(dummy_scan, index, 90, base_angle * 30, False)
+    exporter.export_2D_scan(dummy_scan, index, 30, 90, False)
     index = index + 1
 ```
 
