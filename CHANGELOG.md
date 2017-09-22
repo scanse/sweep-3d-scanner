@@ -1,9 +1,32 @@
 # Changelog
 
-## v0.5.0
 This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
 
 **NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
+
+---
+## v0.6.0
+
+### Features
+- rPi image is now setup to test the IMU. See #20
+  - Disabled Bluetooth so BNO055 IMU can use the serial interface
+  - Pre-installed Adafruit Python BNO055 library
+  - Modified examples from BNO055 library to match wiring configuration outlined in sweep-3d-scanner assembly guide
+
+### Improvements
+- Removes `SCAN_INDEX` column from `.csv` file format. 
+
+### Bugfixes
+- Fixed bug in the main method of `scan_exporter.py` (only used for testing)
+
+### Known Issues
+- Motor control in CCW direction is noisy, erratic and choppy. See #14 
+- Occasionally, stepper motor is not released (base does not spin freely after scan is complete). Try releasing the motor using the `Release Motor` script from the `Component Testing` page before performing another scan. See #10 
+- Occasionally scan does not start from the base home angle, resulting in the base hitting the end-stop before completing a 180 degree scan. See #11 
+- Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
+
+---
+## v0.5.0
 
 ### Features
 - Added download support for PLY, PLY (binary) and XYZ format files. See #47
@@ -21,10 +44,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - Occasionally scan does not start from the base home angle, resulting in the base hitting the end-stop before completing a 180 degree scan. See #11 
 - Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
 
+---
 ## v0.4.2
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - RaspberryPi Host name changed from default `raspberrypi` to `sweep-3d-scanner`
@@ -43,10 +64,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - Occasionally scan does not start from the base home angle, resulting in the base hitting the end-stop before completing a 180 degree scan. See #11 
 - Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
 
+---
 ## v0.4.1
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - None
@@ -67,10 +86,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - Occasionally scan does not start from the base home angle, resulting in the base hitting the end-stop before completing a 180 degree scan. See #11 
 - Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
 
+---
 ## v0.4.0
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - None
@@ -96,10 +113,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - Scanner script will hang if the Motor Hat is disconnected before performing the scan. See #5 
 - Dummy scanner does not mimic selected settings. See #1  
 
+---
 ## v0.3.0
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - Cancel a scan in progress
@@ -124,10 +139,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - Dummy scanner does not mimic selected settings. See #1  
 - Front-end navbar indicates outdated version (v0.1). See #33 
 
+---
 ## v0.2.2
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - Background process (node webserver) now logs stdout + stderr to file (`/home/pi/scanner_output.log`). File is overwritten on boot.
@@ -154,10 +167,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - No ability to cancel or stop a scan in progress other than to restart/shutdown the pi from the homepage. See #3 
 - Dummy scanner does not mimic selected settings. See #1  
 
+---
 ## v0.2.1
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - None
@@ -177,10 +188,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - No ability to cancel or stop a scan in progress other than to restart/shutdown the pi from the homepage. See #3 
 - Dummy scanner does not mimic selected settings. See #1  
 
+---
 ## v0.2.0
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - Increase FOV of scan (deadzone now starts at 135&deg; instead of 120&deg;
@@ -204,10 +213,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - No ability to cancel or stop a scan in progress other than to restart/shutdown the pi from the homepage. See #3 
 - Dummy scanner does not mimic selected settings. See #1  
 
+---
 ## v0.1.1
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - Front-end (broswer) receives updates on the "component_testing" page
@@ -230,10 +237,8 @@ This is an early pre release of the `sweep-3d-scanner` software package. The att
 - No ability to cancel or stop a scan in progress other than to restart/shutdown the pi from the homepage. See #3 
 - Dummy scanner does not mimic selected settings. See #1  
 
+---
 ## v0.1.0
-This is an early pre release of the `sweep-3d-scanner` software package. The attached binary is a complete RaspberryPi image which can be unzipped and flashed to an SD card using etcher. Please see [instructions](https://github.com/scanse/sweep-3d-scanner/wiki/Setup).
-
-**NOTE:** The software is still under heavy development, and should not be considered stable. This release has many known issues and bugs. Please read about them. Familiarize yourself with the known issues and then keep an eye out for odd behavior when using the scanner.
 
 ### Features
 - initial release
